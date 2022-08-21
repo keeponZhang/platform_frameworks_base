@@ -4469,6 +4469,7 @@ public class Activity extends ContextThemeWrapper
         if (mParent == null) {
             options = transferSpringboardActivityOptions(options);
             Instrumentation.ActivityResult ar =
+                //最终是由它来调用的
                 mInstrumentation.execStartActivity(
                     this, mMainThread.getApplicationThread(), mToken, this,
                     intent, requestCode, options);
@@ -6921,6 +6922,7 @@ public class Activity extends ContextThemeWrapper
         if (info.uiOptions != 0) {
             mWindow.setUiOptions(info.uiOptions);
         }
+        //是不是又看到了个熟悉的东东？
         mUiThread = Thread.currentThread();
 
         mMainThread = aThread;

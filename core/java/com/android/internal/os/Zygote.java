@@ -237,6 +237,7 @@ public final class Zygote {
 
         public void run() {
             try {
+                // 此时我们所熟知的ActivityThread的main()方法就会被调用了，然后整个应用就启动了。
                 mMethod.invoke(null, new Object[] { mArgs });
             } catch (IllegalAccessException ex) {
                 throw new RuntimeException(ex);

@@ -4197,6 +4197,8 @@ public class ActivityManager {
      * @hide
      */
     public static IActivityManager getService() {
+        //IActivityManagerSingleton是Singleton类型，Singleton是一个单例的封装类
+        //第一次调用它的get方法时它会通过create方法来初始化AMS这个Binder对象，在后续调用中返回之前创建的对象
         return IActivityManagerSingleton.get();
     }
 
@@ -4204,7 +4206,10 @@ public class ActivityManager {
             new Singleton<IActivityManager>() {
                 @Override
                 protected IActivityManager create() {
+                    //ServiceManager是服务大管家，这里通过getService获取到了IBinder类型的AMS引用
                     final IBinder b = ServiceManager.getService(Context.ACTIVITY_SERVICE);
+                    //这通过asInterface方法把IBinder类型的AMS引用转换成AMS在应用进程的本地代理
+                    // 这里返回的是ActivityManagerService
                     final IActivityManager am = IActivityManager.Stub.asInterface(b);
                     return am;
                 }

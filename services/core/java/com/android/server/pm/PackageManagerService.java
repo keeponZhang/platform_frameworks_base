@@ -333,7 +333,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
+// 这里还得再来说一下PackageManagerService这个很重要的服务，主要是管理包的一些信息，我们知道在apk安装到系统中时，会在/data/app之类的系统目录下存在，
+//     而该服务则会扫描注册在清单中的一些包信息，那么看一下构造方法就能找到一些相关的信息，如下
 /**
  * Keep track of all those APKs everywhere.
  * <p>
@@ -2275,7 +2276,7 @@ public class PackageManagerService extends IPackageManager.Stub
             }
         }
     }
-
+    //注册服务
     public static PackageManagerService main(Context context, Installer installer,
             boolean factoryTest, boolean onlyCore) {
         // Self-check for initial settings.
@@ -2573,7 +2574,7 @@ public class PackageManagerService extends IPackageManager.Stub
             if (mIsUpgrade || mFirstBoot) {
                 scanFlags = scanFlags | SCAN_FIRST_BOOT_OR_UPGRADE;
             }
-
+            //针对制定的目录进行相应的扫描
             // Collect vendor overlay packages. (Do this before scanning any apps.)
             // For security and version matching reason, only consider
             // overlay packages if they reside in the right directory.
@@ -6305,7 +6306,7 @@ public class PackageManagerService extends IPackageManager.Stub
         return resolveIntentInternal(
                 intent, resolvedType, flags, userId, false /*includeInstantApps*/);
     }
-
+    // 扫描app，注册组件
     private ResolveInfo resolveIntentInternal(Intent intent, String resolvedType,
             int flags, int userId, boolean resolveForStart) {
         try {
@@ -6321,7 +6322,7 @@ public class PackageManagerService extends IPackageManager.Stub
             final List<ResolveInfo> query = queryIntentActivitiesInternal(intent, resolvedType,
                     flags, callingUid, userId, resolveForStart);
             Trace.traceEnd(TRACE_TAG_PACKAGE_MANAGER);
-
+            // 会看到有一个根据优先级来选择最佳的ResolveInfo
             final ResolveInfo bestChoice =
                     chooseBestActivity(intent, resolvedType, flags, query, userId);
             return bestChoice;
@@ -6922,6 +6923,7 @@ public class PackageManagerService extends IPackageManager.Stub
                                         && isTargetHiddenFromInstantApp));
                 if (!blockResolution) {
                     final ResolveInfo ri = new ResolveInfo();
+                    //其中ResolveInfo中包含了ActivityInfo的信息
                     ri.activityInfo = ai;
                     list.add(ri);
                 }

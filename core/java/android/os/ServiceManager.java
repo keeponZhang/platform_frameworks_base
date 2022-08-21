@@ -75,7 +75,7 @@ public final class ServiceManager {
             throw new ServiceNotFoundException(name);
         }
     }
-
+    // 其实Android的很多核心服务都是这样会往ServiceManager去注册的。
     /**
      * Place a new @a service called @a name into the service
      * manager.

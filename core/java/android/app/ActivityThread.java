@@ -2700,7 +2700,7 @@ public final class ActivityThread {
             component = new ComponentName(r.activityInfo.packageName,
                     r.activityInfo.targetActivity);
         }
-
+        //看到一个很熟悉的东东么，Activity中的Context的具体实现就是它
         ContextImpl appContext = createBaseContextForActivity(r);
         Activity activity = null;
         try {

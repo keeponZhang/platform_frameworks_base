@@ -3922,6 +3922,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                         app.info.targetSdkVersion, seInfo, requiredAbi, instructionSet,
                         app.info.dataDir, null, entryPointArgs);
             } else {
+                //其中可以看到里面会传要启动应用的各种信息
                 startResult = Process.start(entryPoint,
                         app.processName, uid, uid, gids, debugFlags, mountExternal,
                         app.info.targetSdkVersion, seInfo, requiredAbi, instructionSet,
@@ -4456,6 +4457,19 @@ public class ActivityManagerService extends IActivityManager.Stub
         } catch (RemoteException e) {
         }
     }
+    // 简单的return了startActivityAsUser方法，该方法在最后多了个 UserHandle.getCallingUserId()参数，
+    // AMS根据这个确定调用者权限。我们再来看看其他参数：
+    // caller：IApplicationThread类型，还记得上面提到的ApplicationThread吗？到这里它已经被转成了ApplicationThread的本地代理，这个转换的过程发生在上面讲到的Binder的IPC中，就像上面提到的AMS本地代理转换一样。
+    // callingPackage：前面一直传过来的，代表调用者Activity所在的包名
+    // intent：前面startActivity时传递过来的intent
+    // resolvedType：从上面传过来，intent.resolveTypeIfNeeded()
+    // resultTo：IBinder类型，还记得上面提到的mToken吗？就是从上面一直传过来的，保存着的调用者Activity的ActivityRecord信息
+    // resultWho：String类型，调用者Activity的mEmbeddedID，前面一直传过来的
+    // requestCode：从上面一直传过来的，一直为-1
+    // startFlags：从上面传过来，为0
+    // profilerInfo：ProfilerInfo类型，从上面传过来，等于null
+    // bOptions：Bundle类型，从上面传过来，等于null
+
 
     @Override
     public final int startActivity(IApplicationThread caller, String callingPackage,
@@ -4485,7 +4499,18 @@ public class ActivityManagerService extends IActivityManager.Stub
                 null, null, 0, 0, null, null, null, null, false, userId, container, null,
                 "startActivity");
     }
-
+    // 省略了两个判断，1、判断调用者进程是否被隔离，2、判断调用者是否有权限，这些都不是重点。下面继续简单的return了mActivityStarter.startActivityMayWait方法，mActivityStarter是ActivityStarter类型，它是AMS中加载Activity的控制类，会收集所有的逻辑来决定如何将Intent和Flags转换为Activity，并将Activity和Task以及Stack相关联。传入startActivityMayWait方法的参数又多了几个，看一下几个：
+    // callingUid：第二个参数，等于-1
+    // inTask：倒数第二个参数，TaskRecord类型，代表要启动的Activity所在的栈，这里为null，表示还没创建
+    // reason：倒数第一个参数，值为"startActivityAsUser"，代表启动的理由
+    // 其他的参数有一些传入null，有一些是从上面传过来的
+    //
+    // 下面看ActivityStarter中的startActivityMayWait方法。
+    //
+    // 作者：rain9155
+    // 链接：https://juejin.cn/post/6844903897748733966
+    // 来源：稀土掘金
+    // 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
     @Override
     public final int startActivityAsUser(IApplicationThread caller, String callingPackage,
             Intent intent, String resolvedType, IBinder resultTo, String resultWho, int requestCode,
@@ -4494,6 +4519,8 @@ public class ActivityManagerService extends IActivityManager.Stub
         userId = mUserController.handleIncomingUser(Binder.getCallingPid(), Binder.getCallingUid(),
                 userId, false, ALLOW_FULL_ONLY, "startActivity", null);
         // TODO: Switch to user app stacks here.
+        // 其中看注释说明，是切换到用户app的栈了，我们知道Android的Activity是以栈的形式来管理的，
+        // 所以它是比较核心的了，可以大致看一下它里面有一些栈的管理：
         return mActivityStarter.startActivityMayWait(caller, -1, callingPackage, intent,
                 resolvedType, null, null, resultTo, resultWho, requestCode, startFlags,
                 profilerInfo, null, null, bOptions, false, userId, null, null,

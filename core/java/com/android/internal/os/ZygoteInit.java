@@ -718,7 +718,7 @@ public class ZygoteInit {
             if (abiList == null) {
                 throw new RuntimeException("No ABI list supplied.");
             }
-
+           // 创建一个server端的socket链接
             zygoteServer.registerServerSocket(socketName);
             // In some configurations, we avoid preloading resources and classes eagerly.
             // In such cases, we will preload things prior to our first fork.
@@ -754,12 +754,13 @@ public class ZygoteInit {
             Seccomp.setPolicy();
 
             ZygoteHooks.stopZygoteNoThreadCreation();
-
+            //启动系统systemServer进程
             if (startSystemServer) {
                 startSystemServer(abiList, socketName, zygoteServer);
             }
 
             Log.i(TAG, "Accepting command socket connections");
+            // 最后则开启死循环来等待Ams的请求
             zygoteServer.runSelectLoop(abiList);
 
             zygoteServer.closeServerSocket();
