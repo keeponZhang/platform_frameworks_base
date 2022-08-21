@@ -161,7 +161,7 @@ public class PackageParser {
 
     // TODO: switch outError users to PackageParserException
     // TODO: refactor "codePath" to "apkPath"
-
+    // 会看到我们清单文件中的各个节点名字
     /** File name in an APK for the Android manifest. */
     private static final String ANDROID_MANIFEST_FILENAME = "AndroidManifest.xml";
 
@@ -621,7 +621,7 @@ public class PackageParser {
     public static boolean isAvailable(PackageUserState state) {
         return checkUseInstalledOrHidden(0, state, null);
     }
-
+    //可以看看userId是怎么获取的
     public static PackageInfo generatePackageInfo(PackageParser.Package p,
             int gids[], int flags, long firstInstallTime, long lastUpdateTime,
             Set<String> grantedPermissions, PackageUserState state, int userId) {
@@ -973,7 +973,7 @@ public class PackageParser {
 
         return parsed;
     }
-
+    // 其中Package是一个内部类
     /**
      * Equivalent to {@link #parsePackage(File, int, boolean)} with {@code useCaches == false}.
      */
@@ -1157,6 +1157,7 @@ public class PackageParser {
         try {
             final AssetManager assets = assetLoader.getBaseAssetManager();
             final File baseApk = new File(lite.baseCodePath);
+            //看这里
             final Package pkg = parseBaseApk(baseApk, assets, flags);
             if (pkg == null) {
                 throw new PackageParserException(INSTALL_PARSE_FAILED_NOT_APK,
@@ -1254,6 +1255,7 @@ public class PackageParser {
         final int cookie = loadApkIntoAssetManager(assets, apkPath, flags);
 
         Resources res = null;
+        //就是典型的XML解析
         XmlResourceParser parser = null;
         try {
             res = new Resources(assets, mMetrics, null);
@@ -2017,7 +2019,7 @@ public class PackageParser {
         pkg.coreApp = parser.getAttributeBooleanValue(null, "coreApp", false);
 
         sa.recycle();
-
+        //看这里
         return parseBaseApkCommon(pkg, null, res, parser, flags, outError);
     }
 
@@ -2107,6 +2109,7 @@ public class PackageParser {
         int anyDensity = 1;
 
         int outerDepth = parser.getDepth();
+        //这里则开启清单文件具体结点的解析了
         while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
                 && (type != XmlPullParser.END_TAG || parser.getDepth() > outerDepth)) {
             if (type == XmlPullParser.END_TAG || type == XmlPullParser.TEXT) {
@@ -2137,6 +2140,7 @@ public class PackageParser {
                 }
 
                 foundApp = true;
+                //解析Apllication结点
                 if (!parseBaseApplication(pkg, res, parser, flags, outError)) {
                     return null;
                 }
@@ -3647,6 +3651,7 @@ public class PackageParser {
 
             String tagName = parser.getName();
             if (tagName.equals("activity")) {
+                //解析activity标签并得到一个activity对象
                 Activity a = parseActivity(owner, res, parser, flags, outError, false,
                         owner.baseHardwareAccelerated);
                 if (a == null) {
@@ -3657,6 +3662,8 @@ public class PackageParser {
                 owner.activities.add(a);
 
             } else if (tagName.equals("receiver")) {
+                //这个是我们所关心的，注意解析成Activity
+                //（解析完之后居然返回的是一个Activity？？这是为啥呢？我们可以看到跟解析Activity返回的是同样的类型）
                 Activity a = parseActivity(owner, res, parser, flags, outError, true, false);
                 if (a == null) {
                     mParseError = PackageManager.INSTALL_PARSE_FAILED_MANIFEST_MALFORMED;
@@ -4099,11 +4106,11 @@ public class PackageParser {
                     R.styleable.AndroidManifestActivity_description,
                     R.styleable.AndroidManifestActivity_enabled);
         }
-
+        //这里就有一个具体的判断
         mParseActivityArgs.tag = receiver ? "<receiver>" : "<activity>";
         mParseActivityArgs.sa = sa;
         mParseActivityArgs.flags = flags;
-
+        //实例化了一个Activity
         Activity a = new Activity(mParseActivityArgs, new ActivityInfo());
         if (outError[0] != null) {
             sa.recycle();
@@ -4333,6 +4340,7 @@ public class PackageParser {
             }
 
             if (parser.getName().equals("intent-filter")) {
+                //解析intent-filter信息，new了一个这个对象
                 ActivityIntentInfo intent = new ActivityIntentInfo(a);
                 if (!parseIntent(res, parser, true /*allowGlobs*/, true /*allowAutoVerify*/,
                         intent, outError)) {
@@ -4360,6 +4368,7 @@ public class PackageParser {
                 }
                 if (LOG_UNSAFE_BROADCASTS && receiver
                         && (owner.applicationInfo.targetSdkVersion >= Build.VERSION_CODES.O)) {
+                    //根据计算的Action个数进行遍历
                     for (int i = 0; i < intent.countActions(); i++) {
                         final String action = intent.getAction(i);
                         if (action == null || !action.startsWith("android.")) continue;
@@ -5703,6 +5712,8 @@ public class PackageParser {
         public int[] splitPrivateFlags;
 
         public boolean baseHardwareAccelerated;
+        // 也就是会扫描manifest文件，然后将其扫描的信息存储到对应的集合当中了。
+
 
         // For now we only support one application per package.
         public ApplicationInfo applicationInfo = new ApplicationInfo();
@@ -5710,6 +5721,7 @@ public class PackageParser {
         public final ArrayList<Permission> permissions = new ArrayList<Permission>(0);
         public final ArrayList<PermissionGroup> permissionGroups = new ArrayList<PermissionGroup>(0);
         public final ArrayList<Activity> activities = new ArrayList<Activity>(0);
+        //对于我们此时而言，关心的是它
         public final ArrayList<Activity> receivers = new ArrayList<Activity>(0);
         public final ArrayList<Provider> providers = new ArrayList<Provider>(0);
         public final ArrayList<Service> services = new ArrayList<Service>(0);

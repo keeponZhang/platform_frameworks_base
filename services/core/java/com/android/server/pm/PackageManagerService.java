@@ -2281,10 +2281,11 @@ public class PackageManagerService extends IPackageManager.Stub
             boolean factoryTest, boolean onlyCore) {
         // Self-check for initial settings.
         PackageManagerServiceCompilerMapping.checkProperties();
-
+        //初始化PKMS对象
         PackageManagerService m = new PackageManagerService(context, installer,
                 factoryTest, onlyCore);
         m.enableSystemUserPackages();
+        //将package服务注册到ServiceManager，这是binder服务的常规注册流程
         ServiceManager.addService("package", m);
         return m;
     }
@@ -2371,11 +2372,12 @@ public class PackageManagerService extends IPackageManager.Stub
             Slog.i(TAG, "cppreopts took " + (timeNow - timeStart) + " ms");
         }
     }
-
+    //PKMS的构建有700多行，分别有5个阶段
     public PackageManagerService(Context context, Installer installer,
             boolean factoryTest, boolean onlyCore) {
         LockGuard.installLock(mPackages, LockGuard.INDEX_PACKAGES);
         Trace.traceBegin(TRACE_TAG_PACKAGE_MANAGER, "create package manager");
+        //阶段1，开始阶段
         EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_PMS_START,
                 SystemClock.uptimeMillis());
 
@@ -2391,6 +2393,7 @@ public class PackageManagerService extends IPackageManager.Stub
         mFactoryTest = factoryTest;
         mOnlyCore = onlyCore;
         mMetrics = new DisplayMetrics();
+        //主要是存储系统运行过程中的设置信息
         mSettings = new Settings(mPackages);
         mSettings.addSharedUserLPw("android.uid.system", Process.SYSTEM_UID,
                 ApplicationInfo.FLAG_SYSTEM, ApplicationInfo.PRIVATE_FLAG_PRIVILEGED);
@@ -2421,7 +2424,7 @@ public class PackageManagerService extends IPackageManager.Stub
             mDefParseFlags = 0;
             mSeparateProcesses = null;
         }
-
+        //然后将installer参数保存为成员变量待之后使用
         mInstaller = installer;
         mPackageDexOptimizer = new PackageDexOptimizer(installer, mInstallLock, context,
                 "*dexopt*");
@@ -2445,6 +2448,7 @@ public class PackageManagerService extends IPackageManager.Stub
         synchronized (mInstallLock) {
         // writer
         synchronized (mPackages) {
+            //创建了名为PackageHandler的handler线程
             mHandlerThread = new ServiceThread(TAG,
                     Process.THREAD_PRIORITY_BACKGROUND, true /*allowIo*/);
             mHandlerThread.start();
@@ -2455,14 +2459,16 @@ public class PackageManagerService extends IPackageManager.Stub
             mDefaultPermissionPolicy = new DefaultPermissionGrantPolicy(this);
             mInstantAppRegistry = new InstantAppRegistry(this);
 
+            //创建各种目录，这些目录我们平常在查看系统目录时也看到过
             File dataDir = Environment.getDataDirectory();
             mAppInstallDir = new File(dataDir, "app");
             mAppLib32InstallDir = new File(dataDir, "app-lib");
             mAsecInternalPath = new File(dataDir, "app-asec").getPath();
             mDrmAppPrivateInstallDir = new File(dataDir, "app-private");
+            //创建用户管理服务
             sUserManager = new UserManagerService(context, this,
                     new UserDataPreparer(mInstaller, mInstallLock, mContext, mOnlyCore), mPackages);
-
+            //获取共享库
             // Propagate permission configuration in to package manager.
             ArrayMap<String, SystemConfig.PermissionEntry> permConfig
                     = systemConfig.getPermissions();
@@ -2517,7 +2523,7 @@ public class PackageManagerService extends IPackageManager.Stub
                 mCustomResolverComponentName = ComponentName.unflattenFromString(
                         customResolverActivity);
             }
-
+            //阶段2 扫描系统阶段
             long startTime = SystemClock.uptimeMillis();
 
             EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_PMS_SYSTEM_SCAN_START,
@@ -2533,7 +2539,7 @@ public class PackageManagerService extends IPackageManager.Stub
             if (systemServerClassPath == null) {
                 Slog.w(TAG, "No SYSTEMSERVERCLASSPATH found!");
             }
-
+            // 1、创建/system的子目录，比如/system/framework、system/priv-app和/system/app等等。
             File frameworkDir = new File(Environment.getRootDirectory(), "framework");
 
             final VersionInfo ver = mSettings.getInternalVersion();
@@ -2574,6 +2580,13 @@ public class PackageManagerService extends IPackageManager.Stub
             if (mIsUpgrade || mFirstBoot) {
                 scanFlags = scanFlags | SCAN_FIRST_BOOT_OR_UPGRADE;
             }
+            // 2、扫描系统文件，比如/vendor/overlay、/system/framework、/system/app等等目录下的文件，对扫描到的系统文件做后续处理。
+            //
+            // 其中：
+            //
+            // /system/frameworks：该目录中的文件都是系统库，例如：framework.jar、services.jar、framework-res.apk。不过 scanDirLI 只扫描APK文件，所以 framework-res.apk 是该目录中唯一“受宠”的文件。
+            // 该目录下全是默认的系统应用，例如：Browser.apk、SettingsProvider.apk 等。
+            // /vendor/app：该目录中的文件由厂商提供，即厂商特定的 APK 文件，不过目前市面上的厂商都把自己的应用放在 /system/app 目录下。
             //针对制定的目录进行相应的扫描
             // Collect vendor overlay packages. (Do this before scanning any apps.)
             // For security and version matching reason, only consider
@@ -2621,7 +2634,7 @@ public class PackageManagerService extends IPackageManager.Stub
             scanDirTracedLI(oemAppDir, mDefParseFlags
                     | PackageParser.PARSE_IS_SYSTEM
                     | PackageParser.PARSE_IS_SYSTEM_DIR, scanFlags, 0);
-
+            //该列表代表有可能有升级包的系统app
             // Prune any system packages that no longer exist.
             final List<String> possiblyDeletedUpdatedSystemApps = new ArrayList<String>();
             if (!mOnlyCore) {
@@ -2694,16 +2707,19 @@ public class PackageManagerService extends IPackageManager.Stub
 
             // Remove any shared userIDs that have no associated packages
             mSettings.pruneSharedUsersLPw();
-
+            //阶段3：扫描Data分区阶段
             if (!mOnlyCore) {
+                //打印扫描Data分区阶段日志
                 EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_PMS_DATA_SCAN_START,
                         SystemClock.uptimeMillis());
+                //扫描/data/app目录下的文件
                 scanDirTracedLI(mAppInstallDir, 0, scanFlags | SCAN_REQUIRE_KNOWN, 0);
-
+                //扫描/data/app-private目录下的文件
                 scanDirTracedLI(mDrmAppPrivateInstallDir, mDefParseFlags
                         | PackageParser.PARSE_FORWARD_LOCK,
                         scanFlags | SCAN_REQUIRE_KNOWN, 0);
-
+                // 1、遍历possiblyDeletedUpdatedSystemApps列表，如果这个系统App的包信息不在PMS的变量mPackages中，说明是残留的App信息，后续会删除它的数据。
+                // 说明是存在于Data分区，不属于系统App，那么移除其系统权限。
                 /**
                  * Remove disable package settings for any updated system
                  * apps that were removed via an OTA. If they're not a
@@ -2711,6 +2727,7 @@ public class PackageManagerService extends IPackageManager.Stub
                  * Otherwise, just revoke their system-level permissions.
                  */
                 for (String deletedAppName : possiblyDeletedUpdatedSystemApps) {
+                    // 其中可以看到是利用PackageParser.Package来对包进行扫描的：
                     PackageParser.Package deletedPkg = mPackages.get(deletedAppName);
                     mSettings.removeDisabledSystemPackageLPw(deletedAppName);
 
@@ -2732,7 +2749,8 @@ public class PackageManagerService extends IPackageManager.Stub
                     }
                     logCriticalInfo(Log.WARN, msg);
                 }
-
+                // 2、遍历mExpectingBetter列表，根据系统App所在的目录设置扫描的解析参数，内部会将packageName对应的包设置数据（PackageSetting）添加到mSettings的mPackages中。
+                // 扫描系统App的升级包，最后清除mExpectingBetter列表。
                 /**
                  * Make sure all system apps that we expected to appear on
                  * the userdata partition actually showed up. If they never
@@ -2768,6 +2786,7 @@ public class PackageManagerService extends IPackageManager.Stub
                         mSettings.enableSystemPackageLPw(packageName);
 
                         try {
+                            //扫描系统App的升级包
                             scanPackageTracedLI(scanFile, reparseFlags, scanFlags, 0, null);
                         } catch (PackageManagerException e) {
                             Slog.e(TAG, "Failed to parse original system package: "
@@ -2828,13 +2847,13 @@ public class PackageManagerService extends IPackageManager.Stub
             // read and update their last usage times.
             mPackageUsage.read(mPackages);
             mCompilerStats.read();
-
+            //阶段4，,扫描结束阶段
             EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_PMS_SCAN_END,
                     SystemClock.uptimeMillis());
             Slog.i(TAG, "Time to scan packages: "
                     + ((SystemClock.uptimeMillis()-startTime)/1000f)
                     + " seconds");
-
+            // 1、如果当前平台SDK版本和上次启动时的SDK版本不同，重新更新APK的授权;
             // If the platform SDK has changed since the last time we booted,
             // we need to re-grant app permission to catch any new ones that
             // appear.  This is really a hack, and means that apps can in some
@@ -2849,6 +2868,7 @@ public class PackageManagerService extends IPackageManager.Stub
             }
             updatePermissionsLPw(null, null, StorageManager.UUID_PRIVATE_INTERNAL, updateFlags);
             ver.sdkVersion = mSdkVersion;
+            // 2、如果是第一次启动或者是Android M升级后的第一次启动，需要初始化所有用户定义的默认首选App;
 
             // If this is the first boot or an update from pre-M, and it is a normal
             // boot, then we need to initialize the default preferred apps across
@@ -2915,6 +2935,7 @@ public class PackageManagerService extends IPackageManager.Stub
             // Note that we do *not* clear the application profiles. These remain valid
             // across OTAs and are used to drive profile verification (post OTA) and
             // profile compilation (without waiting to collect a fresh set of profiles).
+            // 3、OTA升级后的第一次启动，会清除代码缓存目录。
             if (mIsUpgrade && !onlyCore) {
                 Slog.i(TAG, "Build fingerprint changed; clearing code caches");
                 for (int i = 0; i < mSettings.mPackages.size(); i++) {
@@ -2934,7 +2955,7 @@ public class PackageManagerService extends IPackageManager.Stub
             // clear only after permissions and other defaults have been updated
             mExistingSystemPackages.clear();
             mPromoteSystemApps = false;
-
+            // 4、把Settings的内容保存到packages.xml中，这样此后PMS再次创建时会读到此前保存的Settings的内容。
             // All the changes are done during package scanning.
             ver.databaseVersion = Settings.CURRENT_DATABASE_VERSION;
 
@@ -2942,7 +2963,7 @@ public class PackageManagerService extends IPackageManager.Stub
             Trace.traceBegin(TRACE_TAG_PACKAGE_MANAGER, "write settings");
             mSettings.writeLPr();
             Trace.traceEnd(TRACE_TAG_PACKAGE_MANAGER);
-
+            //阶段5：准备阶段
             EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_PMS_READY,
                     SystemClock.uptimeMillis());
 
@@ -2972,7 +2993,7 @@ public class PackageManagerService extends IPackageManager.Stub
                 mServicesSystemSharedLibraryPackageName = null;
                 mSharedSystemSharedLibraryPackageName = null;
             }
-
+            //创建PackageInstallerService，它是用来管理安装会话的服务
             mInstallerService = new PackageInstallerService(context, this);
             final Pair<ComponentName, String> instantAppResolverComponent =
                     getInstantAppResolverLPr();
@@ -8792,7 +8813,7 @@ public class PackageManagerService extends IPackageManager.Stub
             Trace.traceEnd(TRACE_TAG_PACKAGE_MANAGER);
         }
     }
-
+    //scanFile：这里传一个要扫描apk的路径
     /**
      *  Traces a package scan.
      *  @see #scanPackageLI(File, int, int, long, UserHandle)
@@ -8827,6 +8848,7 @@ public class PackageManagerService extends IPackageManager.Stub
         Trace.traceBegin(TRACE_TAG_PACKAGE_MANAGER, "parsePackage");
         final PackageParser.Package pkg;
         try {
+            //生成一个PackageParser对象，然后再调用它的parsePackage方法进行包的解析，注意！！！这里已经开始有我们的思路了
             pkg = pp.parsePackage(scanFile, parseFlags);
         } catch (PackageParserException e) {
             throw PackageManagerException.from(e);

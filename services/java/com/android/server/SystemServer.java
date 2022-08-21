@@ -366,8 +366,9 @@ public final class SystemServer {
             android.os.Process.setThreadPriority(
                 android.os.Process.THREAD_PRIORITY_FOREGROUND);
             android.os.Process.setCanSelfBackground(false);
+            //创建消息Looper
             Looper.prepareMainLooper();
-
+            //加载动态库，很明显会用到JNI
             // Initialize native services.
             System.loadLibrary("android_servers");
 
@@ -378,6 +379,7 @@ public final class SystemServer {
             // Initialize the system context.
             createSystemContext();
 
+            //创建SystemServiceManager
             // Create the system service manager.
             mSystemServiceManager = new SystemServiceManager(mSystemContext);
             mSystemServiceManager.setRuntimeRestarted(mRuntimeRestart);
@@ -390,9 +392,13 @@ public final class SystemServer {
 
         // Start services.
         try {
+            //启动服务
             traceBeginAndSlog("StartServices");
+            //启动引导服务
             startBootstrapServices();
+            //启动核心服务
             startCoreServices();
+            //启动其他服务
             startOtherServices();
             SystemServerInitThreadPool.shutdown();
         } catch (Throwable ex) {
@@ -499,6 +505,7 @@ public final class SystemServer {
         // create critical directories such as /data/user with the appropriate
         // permissions.  We need this to complete before we initialize other services.
         traceBeginAndSlog("StartInstaller");
+        //首先开启了Installer服务，貌似跟我们的apk安装有关，先记着，之后会有它露面的机会
         Installer installer = mSystemServiceManager.startService(Installer.class);
         traceEnd();
 
@@ -507,7 +514,7 @@ public final class SystemServer {
         traceBeginAndSlog("DeviceIdentifiersPolicyService");
         mSystemServiceManager.startService(DeviceIdentifiersPolicyService.class);
         traceEnd();
-
+        // 接下来就可以看到启动AMS服务了
         // Activity manager runs the show.
         traceBeginAndSlog("StartActivityManager");
         mActivityManagerService = mSystemServiceManager.startService(
@@ -515,6 +522,7 @@ public final class SystemServer {
         mActivityManagerService.setSystemServiceManager(mSystemServiceManager);
         mActivityManagerService.setInstaller(installer);
         traceEnd();
+        // 接下来还有一系列系统服务的启动，如：PowerManagerService,DisplayManagerService
 
         // Power manager needs to be started early because other services need it.
         // Native daemons may be watching for it to be registered so it must be ready
@@ -574,8 +582,10 @@ public final class SystemServer {
                     (int) SystemClock.elapsedRealtime());
         }
         traceBeginAndSlog("StartPackageManagerService");
+        //创建PKMS对象（这里传入了installer）
         mPackageManagerService = PackageManagerService.main(mSystemContext, installer,
                 mFactoryTestMode != FactoryTest.FACTORY_TEST_OFF, mOnlyCore);
+        //PKMS是否首次启动
         mFirstBoot = mPackageManagerService.isFirstBoot();
         mPackageManager = mSystemContext.getPackageManager();
         traceEnd();
