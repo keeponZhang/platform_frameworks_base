@@ -1589,7 +1589,8 @@ public final class ActivityThread {
         ActivityThread am = currentActivityThread();
         return am != null ? am.mInitialApplication : null;
     }
-
+    // 就是从ServiceManager中来找到package相关的服务，标准的AIDL的调用过程，那IPackageManager的具体实现类是哪个呢？其实是这个，
+    // 也就是继承了IPackageManager中的抽象类Stub的实现类，其实是它：PackageManagerService
     public static IPackageManager getPackageManager() {
         if (sPackageManager != null) {
             //Slog.v("PackageManager", "returning cur default = " + sPackageManager);
@@ -2196,6 +2197,7 @@ public final class ActivityThread {
         Activity activity = null;
         try {
             java.lang.ClassLoader cl = r.packageInfo.getClassLoader();
+            //通过反射来创建我们的activity
             activity = mInstrumentation.newActivity(
                     cl, component.getClassName(), r.intent);
             StrictMode.incrementExpectedActivityCount(activity.getClass());
@@ -3156,6 +3158,7 @@ public final class ActivityThread {
             }
 
             r.activity.mConfigChangeFlags |= configChanges;
+            // 1、正式让之前的Activity暂停：
             performPauseActivity(token, finished, r.isPreHoneycomb());
 
             // Make sure any pending writes are now committed.
@@ -3166,6 +3169,8 @@ public final class ActivityThread {
             // Tell the activity manager we have paused.
             if (!dontReport) {
                 try {
+                    // 2、告诉AMS已经暂停完成：
+                    //ActivityManagerService.activityPaused
                     ActivityManagerNative.getDefault().activityPaused(token);
                 } catch (RemoteException ex) {
                 }
@@ -3208,6 +3213,7 @@ public final class ActivityThread {
             }
             // Now we are idle.
             r.activity.mCalled = false;
+            //最终会调用到它
             mInstrumentation.callActivityOnPause(r.activity);
             EventLog.writeEvent(LOG_ON_PAUSE_CALLED, UserHandle.myUserId(),
                     r.activity.getComponentName().getClassName());
@@ -5051,6 +5057,7 @@ public final class ActivityThread {
             android.ddm.DdmHandleAppName.setAppName("<pre-initialized>",
                                                     UserHandle.myUserId());
             RuntimeInit.setApplicationObject(mAppThread.asBinder());
+            //ActivityManagerService，又是IPC通信
             final IActivityManager mgr = ActivityManagerNative.getDefault();
             try {
                 mgr.attachApplication(mAppThread);
@@ -5180,7 +5187,7 @@ public final class ActivityThread {
             dropBox.addText(tag, data);
         }
     }
-
+    // 当进程被启动之后，则该进程的ActivityThread.main()方法就会被执行，这块就比较熟了。主要是创建一个Looper
     public static void main(String[] args) {
         SamplingProfilerIntegration.start();
 

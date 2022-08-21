@@ -810,6 +810,7 @@ final class ActivityStack {
             Slog.wtf(TAG, "Going to pause when pause is already pending for " + mPausingActivity);
             completePauseLocked(false);
         }
+        //此为要暂停的当前显示的Activity，非要启动的Activity
         ActivityRecord prev = mResumedActivity;
         if (prev == null) {
             if (!resuming) {
@@ -831,6 +832,7 @@ final class ActivityStack {
         mLastPausedActivity = prev;
         mLastNoHistoryActivity = (prev.intent.getFlags() & Intent.FLAG_ACTIVITY_NO_HISTORY) != 0
                 || (prev.info.flags & ActivityInfo.FLAG_NO_HISTORY) != 0 ? prev : null;
+        //改变一下当前要暂停的Activity的状态
         prev.state = ActivityState.PAUSING;
         prev.task.touchActiveTime();
         clearLaunchTime(prev);
@@ -849,6 +851,8 @@ final class ActivityStack {
                         prev.userId, System.identityHashCode(prev),
                         prev.shortComponentName);
                 mService.updateUsageStats(prev, false);
+                //调用它来停止Activity，其中能进入这个条件代表改Activity的进程是存在的
+                // prev.app.thread其实就是ActivityThread
                 prev.app.thread.schedulePauseActivity(prev.appToken, prev.finishing,
                         userLeaving, prev.configChangeFlags, dontWait);
             } catch (Exception e) {
@@ -859,6 +863,7 @@ final class ActivityStack {
                 mLastNoHistoryActivity = null;
             }
         } else {
+            //如果连进程都不存在，那就啥也不做
             mPausingActivity = null;
             mLastPausedActivity = null;
             mLastNoHistoryActivity = null;
@@ -920,6 +925,8 @@ final class ActivityStack {
             if (mPausingActivity == r) {
                 if (DEBUG_STATES) Slog.v(TAG, "Moving to PAUSED: " + r
                         + (timeout ? " (due to timeout)" : " (pause complete)"));
+                // 其中这个方法有一个resumeNext参数，传的true，这里想一想就明白其意思，暂停了当前显示的Activity之后，那肯定得要将要跳转的Activity给显示呀，
+                // 而这个参数就是控制要显示跳转的Activity的逻辑的，如下：
                 completePauseLocked(true);
             } else {
                 EventLog.writeEvent(EventLogTags.AM_FAILED_TO_PAUSE,
@@ -1018,7 +1025,7 @@ final class ActivityStack {
             }
             mPausingActivity = null;
         }
-
+        //我们知道栈的管理是ActivityStackSupervisor，而最终我们要显示的肯定是在栈顶的，所以通过它来拿要显示的ActivityStack，然后再调用它的resumeTopActivitiesLocked
         if (resumeNext) {
             final ActivityStack topStack = mStackSupervisor.getFocusedStack();
             if (!mService.isSleepingOrShuttingDown()) {
@@ -1477,13 +1484,14 @@ final class ActivityStack {
         try {
             // Protect against recursion.
             inResumeTopActivity = true;
+            // 查找要进入暂停的Activity
             result = resumeTopActivityInnerLocked(prev, options);
         } finally {
             inResumeTopActivity = false;
         }
         return result;
     }
-
+    // 这个里面实现的代码理非常之多，只看核心的，在要跳转到新的Activity之前，先会把一些Activity给暂停了，瞅一下这块的核心流程：
     final boolean resumeTopActivityInnerLocked(ActivityRecord prev, Bundle options) {
         if (ActivityManagerService.DEBUG_LOCKSCREEN) mService.logLockScreen("");
 
@@ -1588,7 +1596,7 @@ final class ActivityStack {
             if (DEBUG_STACK) mStackSupervisor.validateTopActivitiesLocked();
             return false;
         }
-
+        //此时会对栈进行管理，对于要打开的任务栈进行移除，其管理者是ActivityStackSupervisor
         // The activity may be waiting for stop, but that is no longer
         // appropriate for it.
         mStackSupervisor.mStoppingActivities.remove(next);
@@ -1635,12 +1643,13 @@ final class ActivityStack {
                 mLastStartedActivity = next;
             }
         }
-
+        //我们需要暂停当前的ACtivity以便顶部的Activity能被显示
         // We need to start pausing the current activity so the top one
         // can be resumed...
         boolean dontWaitForPause = (next.info.flags&ActivityInfo.FLAG_RESUME_WHILE_PAUSING) != 0;
         boolean pausing = mStackSupervisor.pauseBackStacks(userLeaving, true, dontWaitForPause);
         if (mResumedActivity != null) {
+            //通过ipc告诉要暂停的ativity进入暂停
             pausing |= startPausingLocked(userLeaving, false, true, dontWaitForPause);
             if (DEBUG_STATES) Slog.d(TAG, "resumeTopActivityLocked: Pausing " + mResumedActivity);
         }
@@ -1768,6 +1777,7 @@ final class ActivityStack {
         }
 
         ActivityStack lastStack = mStackSupervisor.getLastStack();
+        // 这个方法里面则会有一个关键的逻辑判断，在启动新的Activity时，先判断是否该Activity是在同一个进程：
         if (next.app != null && next.app.thread != null) {
             if (DEBUG_SWITCH) Slog.v(TAG, "Resume running: " + next);
 
@@ -1917,6 +1927,7 @@ final class ActivityStack {
                 if (DEBUG_SWITCH) Slog.v(TAG, "Restarting: " + next);
             }
             if (DEBUG_STATES) Slog.d(TAG, "resumeTopActivityLocked: Restarting " + next);
+            // ，如果条件不满足则代表进程不存在，需要创建进程
             mStackSupervisor.startSpecificActivityLocked(next, true, true);
         }
 
@@ -1956,7 +1967,7 @@ final class ActivityStack {
         mTaskHistory.add(taskNdx, task);
         updateTaskMovement(task, true);
     }
-
+    // ActvityStack  它是专门来维护任务栈的进出的，而上面的ActivityStackSupervisor是维护各个栈的信息，职责不一样，那下面来看一下该方法的细节：
     final void startActivityLocked(ActivityRecord r, boolean newTask,
             boolean doResume, boolean keepCurTransition, Bundle options) {
         TaskRecord rTask = r.task;
@@ -1967,9 +1978,11 @@ final class ActivityStack {
             // Insert or replace.
             // Might not even be in.
             insertTaskAtTop(rTask);
+            //将当前的任务栈插入最前面并将其显示出来
             mWindowManager.moveTaskToTop(taskId);
         }
         TaskRecord task = null;
+        //如果不是一个新的task，则在当前栈中插入activity即可
         if (!newTask) {
             // If starting in an existing task, find where that is...
             boolean startIt = true;
@@ -2115,6 +2128,7 @@ final class ActivityStack {
             validateAppTokensLocked();
         }
 
+        //又回到了StackSupervisor
         if (doResume) {
             mStackSupervisor.resumeTopActivitiesLocked(this, r, options);
         }

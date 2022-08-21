@@ -217,7 +217,8 @@ import dalvik.system.VMRuntime;
 
 import libcore.io.IoUtils;
 import libcore.util.EmptyArray;
-
+// ，这里还得再来说一下PackageManagerService这个很重要的服务，主要是管理包的一些信息，我们知道在apk安装到系统中时，
+//     会在/data/app之类的系统目录下存在，而该服务则会扫描注册在清单中的一些包信息，那么看一下构造方法就能找到一些相关的信息，如下：
 /**
  * Keep track of all those .apks everywhere.
  * 
@@ -1243,7 +1244,7 @@ public class PackageManagerService extends IPackageManager.Stub {
             mHandler.sendEmptyMessageDelayed(WRITE_PACKAGE_RESTRICTIONS, WRITE_SETTINGS_DELAY);
         }
     }
-
+    //注册到ServiceManager
     public static final PackageManagerService main(Context context, Installer installer,
             boolean factoryTest, boolean onlyCore) {
         PackageManagerService m = new PackageManagerService(context, installer,
@@ -1530,6 +1531,7 @@ public class PackageManagerService extends IPackageManager.Stub {
             // For security and version matching reason, only consider
             // overlay packages if they reside in VENDOR_OVERLAY_DIR.
             File vendorOverlayDir = new File(VENDOR_OVERLAY_DIR);
+            //然后对针对制定的目录进行相应的扫描
             scanDirLI(vendorOverlayDir, PackageParser.PARSE_IS_SYSTEM
                     | PackageParser.PARSE_IS_SYSTEM_DIR, scanFlags | SCAN_TRUSTED_OVERLAY, 0);
 
@@ -3015,6 +3017,7 @@ public class PackageManagerService extends IPackageManager.Stub {
         if (!sUserManager.exists(userId)) return null;
         enforceCrossUserPermission(Binder.getCallingUid(), userId, false, false, "resolve intent");
         List<ResolveInfo> query = queryIntentActivities(intent, resolvedType, flags, userId);
+        // 会看到有一个根据优先级来选择最佳的ResolveInfo
         return chooseBestActivity(intent, resolvedType, flags, query, userId);
     }
 
@@ -3068,6 +3071,7 @@ public class PackageManagerService extends IPackageManager.Stub {
                 }
                 // If the first activity has a higher priority, or a different
                 // default, then it is always desireable to pick it.
+                // 会看到有一个根据优先级来选择最佳的ResolveInfo
                 if (r0.priority != r1.priority
                         || r0.preferredOrder != r1.preferredOrder
                         || r0.isDefault != r1.isDefault) {
@@ -3346,10 +3350,12 @@ public class PackageManagerService extends IPackageManager.Stub {
         }
 
         if (comp != null) {
+
             final List<ResolveInfo> list = new ArrayList<ResolveInfo>(1);
             final ActivityInfo ai = getActivityInfo(comp, flags, userId);
             if (ai != null) {
                 final ResolveInfo ri = new ResolveInfo();
+                //其中ResolveInfo中包含了ActivityInfo的信息
                 ri.activityInfo = ai;
                 list.add(ri);
             }

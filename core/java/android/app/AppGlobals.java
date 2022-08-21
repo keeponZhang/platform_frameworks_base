@@ -39,6 +39,7 @@ public class AppGlobals {
         return ActivityThread.currentPackageName();
     }
 
+    //其实就是一个AIDL接口
     /**
      * Return the raw interface to the package manager.
      * @return The package manager.

@@ -2996,7 +2996,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             handleAppDiedLocked(app, true, true);
             checkTime(startTime, "startProcess: done killing old proc");
         }
-
+        //看到这个hostName,是不是就想到了socket通信了，其实就是这样的，接下来就要跟底层进行socket通讯了
         String hostingNameStr = hostingName != null
                 ? hostingName.flattenToShortString() : null;
 
@@ -3031,6 +3031,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
         if (app == null) {
             checkTime(startTime, "startProcess: creating new process record");
+            //创建进程
             app = newProcessRecordLocked(info, processName, isolated, isolatedUid);
             app.crashHandler = crashHandler;
             if (app == null) {
@@ -3095,7 +3096,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (DEBUG_PROCESSES && mProcessesOnHold.contains(app)) Slog.v(TAG,
                 "startProcessLocked removing on hold: " + app);
         mProcessesOnHold.remove(app);
-
+        //开始构造启动进程参数了
         checkTime(startTime, "startProcess: starting to update cpu stats");
         updateCpuStats();
         checkTime(startTime, "startProcess: done updating cpu stats");
@@ -3189,6 +3190,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             boolean isActivityProcess = (entryPoint == null);
             if (entryPoint == null) entryPoint = "android.app.ActivityThread";
             checkTime(startTime, "startProcess: asking zygote to start proc");
+            //此时就会调用ActivityThread的main方法了
             Process.ProcessStartResult startResult = Process.start(entryPoint,
                     app.processName, uid, uid, gids, debugFlags, mountExternal,
                     app.info.targetSdkVersion, app.info.seinfo, requiredAbi, instructionSet,
@@ -3212,6 +3214,7 @@ public final class ActivityManagerService extends ActivityManagerNative
 
             checkTime(startTime, "startProcess: building log message");
             StringBuilder buf = mStringBuilder;
+            //构建启动进程的各种参数
             buf.setLength(0);
             buf.append("Start proc ");
             buf.append(app.processName);
@@ -3253,6 +3256,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             synchronized (mPidsSelfLocked) {
                 this.mPidsSelfLocked.put(startResult.pid, app);
                 if (isActivityProcess) {
+                    //最终会发送一个这个消息
                     Message msg = mHandler.obtainMessage(PROC_START_TIMEOUT_MSG);
                     msg.obj = app;
                     mHandler.sendMessageDelayed(msg, startResult.usingWrapper
@@ -6189,6 +6193,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         // See if the top visible activity is waiting to run in this process...
         if (normalMode) {
             try {
+                //这个是核心代码
                 if (mStackSupervisor.attachApplicationLocked(app)) {
                     didSomething = true;
                 }
@@ -6438,6 +6443,7 @@ public final class ActivityManagerService extends ActivityManagerNative
         synchronized(this) {
             ActivityStack stack = ActivityRecord.getStackLocked(token);
             if (stack != null) {
+                // 然后就会调用到ActivityStack.activityPausedLocked()方法。
                 stack.activityPausedLocked(token, false);
             }
         }

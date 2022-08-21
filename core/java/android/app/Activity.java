@@ -1423,7 +1423,7 @@ public class Activity extends ContextThemeWrapper
         outState.putBundle(SAVED_DIALOGS_TAG, dialogState);
     }
 
-
+    //整个停止当前Activity的流程完毕了，也就是为啥我们在启动一个Activity之前一定先把当前的Activity给暂停了，然后再显示我们要启动Activity的原因了
     /**
      * Called as part of the activity lifecycle when an activity is going into
      * the background, but has not (yet) been killed.  The counterpart to

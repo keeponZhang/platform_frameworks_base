@@ -507,7 +507,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
         }
         return resumedActivity;
     }
-
+    // ：准备启动应用，先查找MainActivity 此时又回到了这个栈管理大管家
     boolean attachApplicationLocked(ProcessRecord app) throws RemoteException {
         final String processName = app.processName;
         boolean didSomething = false;
@@ -518,11 +518,13 @@ public final class ActivityStackSupervisor implements DisplayListener {
                 if (!isFrontStack(stack)) {
                     continue;
                 }
+                //找到栈顶的ActivityRecord对象
                 ActivityRecord hr = stack.topRunningActivityLocked(null);
                 if (hr != null) {
                     if (hr.app == null && app.uid == hr.info.applicationInfo.uid
                             && processName.equals(hr.processName)) {
                         try {
+                            // IPC通知ActivityThread
                             if (realStartActivityLocked(hr, app, true, true)) {
                                 didSomething = true;
                             }
@@ -910,6 +912,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
                         callingPid = Binder.getCallingPid();
                         componentSpecified = true;
                         try {
+                            //这就是根据我们要启动的intent来找相关的ResolveInfo的
                             ResolveInfo rInfo =
                                 AppGlobals.getPackageManager().resolveIntent(
                                         intent, null,
@@ -1064,6 +1067,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
 
         r.startFreezingScreenLocked(app, 0);
         if (false) Slog.d(TAG, "realStartActivity: setting app visibility true");
+        //设置window可见，也就是即将要显示我们要跳转的Activity
         mWindowManager.setAppVisibility(r.appToken, true);
 
         // schedule launch ticks to collect information about slow apps.
@@ -1154,6 +1158,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
                     ? new ProfilerInfo(profileFile, profileFd, mService.mSamplingInterval,
                     mService.mAutoStopProfiler) : null;
             app.forceProcessStateUpTo(ActivityManager.PROCESS_STATE_TOP);
+            //启动activity
             app.thread.scheduleLaunchActivity(new Intent(r.intent), r.appToken,
                     System.identityHashCode(r), r.info, new Configuration(mService.mConfiguration),
                     r.compat, r.task.voiceInteractor, app.repProcState, r.icicle, r.persistentState,
@@ -1234,7 +1239,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
 
         return true;
     }
-
+    // 又回到了这个栈管理类了，看一下它的细节
     void startSpecificActivityLocked(ActivityRecord r,
             boolean andResume, boolean checkConfig) {
         // Is this activity's application already running?
@@ -1264,11 +1269,11 @@ public final class ActivityStackSupervisor implements DisplayListener {
             // If a dead object exception was thrown -- fall through to
             // restart the application.
         }
-
+        // ActivityManagerService.startProcessLocked()：通过Process.start(“android.app.ActivityThread”)启动进程
         mService.startProcessLocked(r.processName, r.info.applicationInfo, true, 0,
                 "activity", r.intent.getComponent(), false, false, true);
     }
-
+    // 验证intent、Class、Permission等，保存将要启动的Activity的Record
     final int startActivityLocked(IApplicationThread caller,
             Intent intent, String resolvedType, ActivityInfo aInfo,
             IVoiceInteractionSession voiceSession, IVoiceInteractor voiceInteractor,
@@ -1347,7 +1352,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
                 callingPackage = sourceRecord.launchedFromPackage;
             }
         }
-
+        可以看到各种异常检测，这里截其中一小部分
         if (err == ActivityManager.START_SUCCESS && intent.getComponent() == null) {
             // We couldn't find a class that can handle the given Intent.
             // That's the end of that!
@@ -1453,7 +1458,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
             ActivityOptions.abort(options);
             return ActivityManager.START_SUCCESS;
         }
-
+        // 最终生成一个ActivityRecord对像来保存相关信息：
         ActivityRecord r = new ActivityRecord(mService, callerApp, callingUid, callingPackage,
                 intent, resolvedType, aInfo, mService.mConfiguration, resultRecord, resultWho,
                 requestCode, componentSpecified, this, container, options);
@@ -1486,7 +1491,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
         }
 
         doPendingActivityLaunchesLocked(false);
-
+        //由于前面已经检查过了，则这个就不需要检查了，看名称就晓得大意了
         err = startActivityUncheckedLocked(r, sourceRecord, voiceSession, voiceInteractor,
                 startFlags, true, options, inTask);
 
@@ -1570,7 +1575,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
             moveHomeStack(isHomeActivity);
         }
     }
-
+    // 检查将要启动的Activity的launchMode和启动Flag，根据launcheMode和Flag配置task
     final int startActivityUncheckedLocked(ActivityRecord r, ActivityRecord sourceRecord,
             IVoiceInteractionSession voiceSession, IVoiceInteractor voiceInteractor, int startFlags,
             boolean doResume, Bundle options, TaskRecord inTask) {
@@ -2174,6 +2179,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
         }
         ActivityStack.logStartActivity(EventLogTags.AM_CREATE_ACTIVITY, r, r.task);
         targetStack.mLastPausedActivity = null;
+        // ：任务栈历史栈配置
         targetStack.startActivityLocked(r, newTask, doResume, keepCurTransition, options);
         if (!launchTaskBehind) {
             // Don't set focus on an activity that's going to the back.
@@ -2418,6 +2424,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
         return resumeTopActivitiesLocked(null, null, null);
     }
 
+    //这个方法会被调用2次，一次是启动activiy时，一次是前一个activity被onpause后
     boolean resumeTopActivitiesLocked(ActivityStack targetStack, ActivityRecord target,
             Bundle targetOptions) {
         if (targetStack == null) {
@@ -2425,6 +2432,7 @@ public final class ActivityStackSupervisor implements DisplayListener {
         }
         // Do targetStack first.
         boolean result = false;
+        //如果当前的任务栈已经在栈顶了，则调用ActivityStack.resumeTopActivityLocked
         if (isFrontStack(targetStack)) {
             result = targetStack.resumeTopActivityLocked(target, targetOptions);
         }
