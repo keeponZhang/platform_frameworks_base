@@ -1731,23 +1731,27 @@ class ContextImpl extends Context {
         if (permission == null) {
             throw new IllegalArgumentException("permission is null");
         }
-
+        //看到它就想到了binder通讯了，也比较熟了，ActivityManagerService
         final IActivityManager am = ActivityManager.getService();
         if (am == null) {
             // Well this is super awkward; we somehow don't have an active
             // ActivityManager instance. If we're testing a root or system
             // UID, then they totally have whatever permission this is.
+            //如果获取不到am则进入此条件
             final int appId = UserHandle.getAppId(uid);
+            //如果是系统或者是Root应用，就直接放行
             if (appId == Process.ROOT_UID || appId == Process.SYSTEM_UID) {
                 Slog.w(TAG, "Missing ActivityManager; assuming " + uid + " holds " + permission);
                 return PackageManager.PERMISSION_GRANTED;
             }
             Slog.w(TAG, "Missing ActivityManager; assuming " + uid + " does not hold "
                     + permission);
+            //其他应用一直不放行
             return PackageManager.PERMISSION_DENIED;
         }
 
         try {
+            //如果am不为null，则开始进一步权限检测，对于我们的应用来说会走它
             return am.checkPermission(permission, pid, uid);
         } catch (RemoteException e) {
             throw e.rethrowFromSystemServer();

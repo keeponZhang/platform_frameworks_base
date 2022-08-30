@@ -9098,9 +9098,10 @@ public class ActivityManagerService extends IActivityManager.Stub
             return ActivityManagerService.this;
         }
     }
-
+    //多了两个参数，干嘛用的？
     int checkComponentPermission(String permission, int pid, int uid,
             int owningUid, boolean exported) {
+        //如果是本应用则直接方形，到这很明显是系统应用了
         if (pid == MY_PID) {
             return PackageManager.PERMISSION_GRANTED;
         }

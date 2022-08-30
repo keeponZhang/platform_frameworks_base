@@ -3845,19 +3845,23 @@ public class ActivityManager {
             int owningUid, boolean exported) {
         // Root, system server get to do everything.
         final int appId = UserHandle.getAppId(uid);
+        //如果是系统或者root应用，这直接放行
         if (appId == Process.ROOT_UID || appId == Process.SYSTEM_UID) {
             return PackageManager.PERMISSION_GRANTED;
         }
         // Isolated processes don't get any permissions.
+        //如果是隔离进程则直接不通过（那啥叫隔离进程呢？在Android中其实是有一个进程的范围的，比如有些应用被拉入黑名单，总之这个进程是没有任何权限的）
         if (UserHandle.isIsolated(uid)) {
             return PackageManager.PERMISSION_DENIED;
         }
         // If there is a uid that owns whatever is being accessed, it has
         // blanket access to it regardless of the permissions it requires.
+        //如果是自己应用本身的权限，当前有权限访问啦
         if (owningUid >= 0 && UserHandle.isSameApp(uid, owningUid)) {
             return PackageManager.PERMISSION_GRANTED;
         }
         // If the target is not exported, then nobody else can get to it.
+        //export是不是等于true，如果不是true则也没有访问权限
         if (!exported) {
             /*
             RuntimeException here = new RuntimeException("here");

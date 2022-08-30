@@ -43,6 +43,7 @@ public class AppGlobals {
      * Return the raw interface to the package manager.
      * @return The package manager.
      */
+    //PackageManagerService
     public static IPackageManager getPackageManager() {
         return ActivityThread.getPackageManager();
     }
