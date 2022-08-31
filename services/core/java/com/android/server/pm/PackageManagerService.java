@@ -5507,7 +5507,7 @@ public class PackageManagerService extends IPackageManager.Stub
         } finally {
             Binder.restoreCallingIdentity(identity);
         }
-
+        //如果来获得权限的flags，如果拥有如下的三个flag，则也不需要显示弹框
         final int fixedFlags = PackageManager.FLAG_PERMISSION_SYSTEM_FIXED
                 | PackageManager.FLAG_PERMISSION_POLICY_FIXED
                 | PackageManager.FLAG_PERMISSION_USER_FIXED;

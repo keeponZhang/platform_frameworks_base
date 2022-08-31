@@ -245,26 +245,33 @@ public class PermissionManagerService {
 
     private int checkUidPermission(String permName, PackageParser.Package pkg, int uid,
             int callingUid) {
+        //获取调用的用户uid
+        //这个是指访问者或者申请者的应用id，这个一般是给Google小程序来使用的，国内app是用不到的
         final int callingUserId = UserHandle.getUserId(callingUid);
+        // 就是类似于微信小程序
         final boolean isCallerInstantApp =
                 mPackageManagerInt.getInstantAppPackageName(callingUid) != null;
         final boolean isUidInstantApp =
                 mPackageManagerInt.getInstantAppPackageName(uid) != null;
+
         final int userId = UserHandle.getUserId(uid);
         if (!mUserManagerInt.exists(userId)) {
             return PackageManager.PERMISSION_DENIED;
         }
 
         if (pkg != null) {
+            //sharedUserId，这个在我工作中有接触过
             if (pkg.mSharedUserId != null) {
                 if (isCallerInstantApp) {
                     return PackageManager.PERMISSION_DENIED;
                 }
             } else if (mPackageManagerInt.filterAppAccess(pkg, callingUid, callingUserId)) {
+                //如果是被过滤的App则权限被禁止，当然正常我们的应用也不会进到这个条件
                 return PackageManager.PERMISSION_DENIED;
             }
             final PermissionsState permissionsState =
                     ((PackageSetting) pkg.mExtras).getPermissionsState();
+            //如果有权限当然直接允许了
             if (permissionsState.hasPermission(permName, userId)) {
                 if (isUidInstantApp) {
                     if (mSettings.isPermissionInstant(permName)) {
@@ -280,6 +287,7 @@ public class PermissionManagerService {
                 return PackageManager.PERMISSION_GRANTED;
             }
         } else {
+            //如果pkg木有获取到，则判断是否拥有系统权限，有当然也直接允许了
             ArraySet<String> perms = mSystemPermissions.get(uid);
             if (perms != null) {
                 if (perms.contains(permName)) {
@@ -291,6 +299,7 @@ public class PermissionManagerService {
                 }
             }
         }
+        // 以上条件都没有通过，那很显然此权限木有拥有，则直接返回未授权了：
         return PackageManager.PERMISSION_DENIED;
     }
 
