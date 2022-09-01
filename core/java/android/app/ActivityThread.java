@@ -3770,6 +3770,7 @@ public final class ActivityThread extends ClientTransactionHandler {
                 r.pendingIntents = null;
             }
             if (r.pendingResults != null) {
+                //看这里
                 deliverResults(r, r.pendingResults, reason);
                 r.pendingResults = null;
             }

@@ -1911,6 +1911,7 @@ public class PackageManagerService extends IPackageManager.Stub
 
             // Not critical; if this is lost, the application has to request again.
             synchronized (mPackages) {
+                //其实也就是写到配置文件当中了，这里就不细分析了，再回到授权的主界面来，
                 mSettings.writeRuntimePermissionsForUserLPr(userId, false);
             }
         }
@@ -5405,9 +5406,10 @@ public class PackageManagerService extends IPackageManager.Stub
     public void removePermission(String permName) {
         mPermissionManager.removeDynamicPermission(permName, getCallingUid(), mPermissionCallback);
     }
-
+    //app动态申请权限会走到这里
     @Override
     public void grantRuntimePermission(String packageName, String permName, final int userId) {
+        //注意，这里传了回调mPermissionCallback进去
         mPermissionManager.grantRuntimePermission(permName, packageName, false /*overridePolicy*/,
                 getCallingUid(), userId, mPermissionCallback);
     }

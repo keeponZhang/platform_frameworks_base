@@ -557,13 +557,14 @@ public final class PermissionsState {
     }
 
     private int grantPermission(BasePermission permission, int userId) {
+        //如果已经授权了，则直接返回操作失败
         if (hasPermission(permission.getName(), userId)) {
             return PERMISSION_OPERATION_FAILURE;
         }
 
         final boolean hasGids = !ArrayUtils.isEmpty(permission.computeGids(userId));
         final int[] oldGids = hasGids ? computeGids(userId) : NO_GIDS;
-
+        //根据我们申请的permission来构建PermissionData对象
         PermissionData permissionData = ensurePermissionData(permission);
 
         if (!permissionData.grant(userId)) {
@@ -605,7 +606,7 @@ public final class PermissionsState {
                 return PERMISSION_OPERATION_SUCCESS_GIDS_CHANGED;
             }
         }
-
+        //最后返回授权成功的状态
         return PERMISSION_OPERATION_SUCCESS;
     }
 
@@ -630,6 +631,7 @@ public final class PermissionsState {
         if (mPermissions == null) {
             mPermissions = new ArrayMap<>();
         }
+        //根据授权列表来进项构建
         PermissionData permissionData = mPermissions.get(permName);
         if (permissionData == null) {
             permissionData = new PermissionData(permission);

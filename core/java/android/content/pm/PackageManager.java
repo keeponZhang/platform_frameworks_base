@@ -3651,6 +3651,7 @@ public abstract class PackageManager {
         if (ArrayUtils.isEmpty(permissions)) {
            throw new IllegalArgumentException("permission cannot be null or empty");
         }
+        //用的是一个隐式意图来构建的
         Intent intent = new Intent(ACTION_REQUEST_PERMISSIONS);
         intent.putExtra(EXTRA_REQUEST_PERMISSIONS_NAMES, permissions);
         intent.setPackage(getPermissionControllerPackageName());

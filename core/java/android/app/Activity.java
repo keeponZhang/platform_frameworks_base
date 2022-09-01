@@ -4471,12 +4471,14 @@ public class Activity extends ContextThemeWrapper
         if (requestCode < 0) {
             throw new IllegalArgumentException("requestCode should be >= 0");
         }
+        //如果已经发过权限申请，则直接回调
         if (mHasCurrentPermissionsRequest) {
             Log.w(TAG, "Can request only one set of permissions at a time");
             // Dispatch the callback with empty arrays which means a cancellation.
             onRequestPermissionsResult(requestCode, new String[0], new int[0]);
             return;
         }
+        //没有请求权限则开启个Activity？原来我们的权限弹窗使用Activity实现的 GrantPermissionsActivity
         Intent intent = getPackageManager().buildRequestPermissionsIntent(permissions);
         startActivityForResult(REQUEST_PERMISSIONS_WHO_PREFIX, intent, requestCode, null);
         mHasCurrentPermissionsRequest = true;
@@ -7453,6 +7455,7 @@ public class Activity extends ContextThemeWrapper
         if (who == null) {
             onActivityResult(requestCode, resultCode, data);
         } else if (who.startsWith(REQUEST_PERMISSIONS_WHO_PREFIX)) {
+            //其中REQUEST_PERMISSIONS_WHO_PREFIX还记得是在哪传递的么？就是在我们申请权限时传递的，回忆一下：
             who = who.substring(REQUEST_PERMISSIONS_WHO_PREFIX.length());
             if (TextUtils.isEmpty(who)) {
                 dispatchRequestPermissionsResult(requestCode, data);
@@ -7605,6 +7608,7 @@ public class Activity extends ContextThemeWrapper
                 PackageManager.EXTRA_REQUEST_PERMISSIONS_NAMES) : new String[0];
         final int[] grantResults = (data != null) ? data.getIntArrayExtra(
                 PackageManager.EXTRA_REQUEST_PERMISSIONS_RESULTS) : new int[0];
+        //此时咱们就可以在咱们自己的Activity重写这个方法处理授权逻辑了
         onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 

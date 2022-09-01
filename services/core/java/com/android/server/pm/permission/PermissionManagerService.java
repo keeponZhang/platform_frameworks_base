@@ -1380,6 +1380,7 @@ public class PermissionManagerService {
 
     private void grantRuntimePermission(String permName, String packageName, boolean overridePolicy,
             int callingUid, final int userId, PermissionCallback callback) {
+        //判断用户是否存在
         if (!mUserManagerInt.exists(userId)) {
             Log.e(TAG, "No such user:" + userId);
             return;
