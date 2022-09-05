@@ -130,15 +130,18 @@ public final class WindowManagerGlobal {
     public static final int ADD_PERMISSION_DENIED = -8;
     public static final int ADD_INVALID_DISPLAY = -9;
     public static final int ADD_INVALID_TYPE = -10;
-
+    //WindowManagerGlobal类也负责和WMS通信
     private static WindowManagerGlobal sDefaultWindowManager;
     private static IWindowManager sWindowManagerService;
     private static IWindowSession sWindowSession;
 
     private final Object mLock = new Object();
 
+    //mViews保存的是View对象，DecorView
     private final ArrayList<View> mViews = new ArrayList<View>();
+    //mRoots保存和顶层View关联的ViewRootImpl对象
     private final ArrayList<ViewRootImpl> mRoots = new ArrayList<ViewRootImpl>();
+    //mParams保存的是创建顶层View的layout参数。
     private final ArrayList<WindowManager.LayoutParams> mParams =
             new ArrayList<WindowManager.LayoutParams>();
     private final ArraySet<View> mDyingViews = new ArraySet<View>();

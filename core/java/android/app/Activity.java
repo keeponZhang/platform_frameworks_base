@@ -2666,6 +2666,7 @@ public class Activity extends ContextThemeWrapper
      * @see #setContentView(android.view.View, android.view.ViewGroup.LayoutParams)
      */
     public void setContentView(@LayoutRes int layoutResID) {
+        //PhoneWindow
         getWindow().setContentView(layoutResID);
         initWindowDecorActionBar();
     }

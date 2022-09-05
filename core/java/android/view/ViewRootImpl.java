@@ -813,7 +813,7 @@ public final class ViewRootImpl implements ViewParent,
                     mInputEventReceiver = new WindowInputEventReceiver(mInputChannel,
                             Looper.myLooper());
                 }
-
+                //也就是说将ViewRoot作为了View的Parent
                 view.assignParent(this);
                 mAddedTouchMode = (res & WindowManagerGlobal.ADD_FLAG_IN_TOUCH_MODE) != 0;
                 mAppVisible = (res & WindowManagerGlobal.ADD_FLAG_APP_VISIBLE) != 0;
@@ -1160,6 +1160,7 @@ public final class ViewRootImpl implements ViewParent,
         if (!mHandlingLayoutInLayoutRequest) {
             checkThread();
             mLayoutRequested = true;
+            //测量绘制
             scheduleTraversals();
         }
     }
@@ -1388,7 +1389,7 @@ public final class ViewRootImpl implements ViewParent,
             if (mProfile) {
                 Debug.startMethodTracing("ViewAncestor");
             }
-
+            //这里就正式进入UI绘制的流程了
             performTraversals();
 
             if (mProfile) {
@@ -1634,7 +1635,7 @@ public final class ViewRootImpl implements ViewParent,
         }
 
         mWindowAttributesChangesFlag = 0;
-
+        //正式绘制之前先画了一个矩形
         Rect frame = mWinFrame;
         if (mFirst) {
             mFullRedrawNeeded = true;
@@ -2164,6 +2165,7 @@ public final class ViewRootImpl implements ViewParent,
                             + " coveredInsetsChanged=" + contentInsetsChanged);
 
                      // Ask host how big it wants to be
+                    //开始进行测量
                     performMeasure(childWidthMeasureSpec, childHeightMeasureSpec);
 
                     // Implementation of weights from WindowManager.LayoutParams
@@ -2209,6 +2211,7 @@ public final class ViewRootImpl implements ViewParent,
         boolean triggerGlobalLayoutListener = didLayout
                 || mAttachInfo.mRecomputeGlobalAttributes;
         if (didLayout) {
+            //进行布局
             performLayout(lp, mWidth, mHeight);
 
             // By this point all views have been sized and positioned
@@ -2355,7 +2358,7 @@ public final class ViewRootImpl implements ViewParent,
                 }
                 mPendingTransitions.clear();
             }
-
+            //最终完成绘制
             performDraw();
         } else {
             if (isViewVisible) {
@@ -2419,6 +2422,7 @@ public final class ViewRootImpl implements ViewParent,
         }
         Trace.traceBegin(Trace.TRACE_TAG_VIEW, "measure");
         try {
+            //而mView其实就是DecorView
             mView.measure(childWidthMeasureSpec, childHeightMeasureSpec);
         } finally {
             Trace.traceEnd(Trace.TRACE_TAG_VIEW);
@@ -2628,7 +2632,7 @@ public final class ViewRootImpl implements ViewParent,
             requestLayout();
         }
     }
-
+    //计算出基于布局参数在一个window的根view的测量信息
     /**
      * Figures out the measure spec for the root view in a window based on it's
      * layout params.
@@ -2648,14 +2652,17 @@ public final class ViewRootImpl implements ViewParent,
 
         case ViewGroup.LayoutParams.MATCH_PARENT:
             // Window can't resize. Force root view to be windowSize.
+            //window不能重新调整尺寸，强制根view位window的大小
             measureSpec = MeasureSpec.makeMeasureSpec(windowSize, MeasureSpec.EXACTLY);
             break;
         case ViewGroup.LayoutParams.WRAP_CONTENT:
             // Window can resize. Set max size for root view.
+            //window能够重置尺寸，给根view设置最大值
             measureSpec = MeasureSpec.makeMeasureSpec(windowSize, MeasureSpec.AT_MOST);
             break;
         default:
             // Window wants to be an exact size. Force root view to be that size.
+            //window想要一个精确的大小
             measureSpec = MeasureSpec.makeMeasureSpec(rootDimension, MeasureSpec.EXACTLY);
             break;
         }
@@ -2853,6 +2860,7 @@ public final class ViewRootImpl implements ViewParent,
     }
 
     private void draw(boolean fullRedrawNeeded) {
+        //最终绘制的画布则为它！！，至此整个绘制主流程就分析完了
         Surface surface = mSurface;
         if (!surface.isValid()) {
             return;

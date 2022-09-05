@@ -19654,7 +19654,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
         boolean changed = isLayoutModeOptical(mParent) ?
                 setOpticalFrame(l, t, r, b) : setFrame(l, t, r, b);
-
+        //只有changed为true的情况下才进行布局，达到优化性能的目的
         if (changed || (mPrivateFlags & PFLAG_LAYOUT_REQUIRED) == PFLAG_LAYOUT_REQUIRED) {
             onLayout(changed, l, t, r, b);
 
@@ -19701,6 +19701,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @param right Right position, relative to parent
      * @param bottom Bottom position, relative to parent
      */
+    //空实现，由子类具体实现
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
     }
 
@@ -19717,6 +19718,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      *         previous ones
      * {@hide}
      */
+    //而对于setFrame在进行初始化的时候会对比上一次是否一致，若一致则不会在此进行，若是一致，则会使我们旧的信息直接失效invalidate(sizeChanged);
     protected boolean setFrame(int left, int top, int right, int bottom) {
         boolean changed = false;
 
@@ -21990,7 +21992,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
         mPrivateFlags |= PFLAG_FORCE_LAYOUT;
         mPrivateFlags |= PFLAG_INVALIDATED;
-
+        //而mParent在之前已经分析过了，叫ViewRootImpl
         if (mParent != null && !mParent.isLayoutRequested()) {
             mParent.requestLayout();
         }
@@ -22142,6 +22144,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @see android.view.View.MeasureSpec#getMode(int)
      * @see android.view.View.MeasureSpec#getSize(int)
      */
+    //很明显默认的这个方法只会测量自己，不会测量子view的，所以一般实际中都会重写这个方法来自己实现的
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         setMeasuredDimension(getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec),
                 getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec));
@@ -24597,6 +24600,10 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
          * Measure specification mode: The parent has not imposed any constraint
          * on the child. It can be whatever size it wants.
          */
+        /**
+         * UNSPECIFIED 模式：
+         * 父View不对子View有任何限制，子View需要多大就多大
+         */
         public static final int UNSPECIFIED = 0 << MODE_SHIFT;
 
         /**
@@ -24604,11 +24611,21 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
          * for the child. The child is going to be given those bounds regardless
          * of how big it wants to be.
          */
+        /**
+         * EXACTYLY 模式：
+         * 父View已经测量出子View所需要的精确大小，这时候View的最终大小
+         * 就是SpecSize所指定的值。对应于match_parent和精确数值这两种模式
+         */
         public static final int EXACTLY     = 1 << MODE_SHIFT;
 
         /**
          * Measure specification mode: The child can be as large as it wants up
          * to the specified size.
+         */
+        /**
+         * AT_MOST 模式：
+         * 子View的最终大小是父View指定的SpecSize值，并且子View的大小不能大于这个值，
+         * 即对应wrap_content这种模式
          */
         public static final int AT_MOST     = 2 << MODE_SHIFT;
 
@@ -24633,6 +24650,8 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
          * @param mode the mode of the measure specification
          * @return the measure specification based on size and mode
          */
+        //将size和mode打包成一个32位的int型数值
+        //高2位表示SpecMode，测量模式，低30位表示SpecSize，某种测量模式下的规格大小
         public static int makeMeasureSpec(@IntRange(from = 0, to = (1 << MeasureSpec.MODE_SHIFT) - 1) int size,
                                           @MeasureSpecMode int mode) {
             if (sUseBrokenMakeMeasureSpec) {
@@ -24663,6 +24682,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
          *         {@link android.view.View.MeasureSpec#AT_MOST} or
          *         {@link android.view.View.MeasureSpec#EXACTLY}
          */
+        //将32位的MeasureSpec解包，返回SpecMode,测量模式
         @MeasureSpecMode
         public static int getMode(int measureSpec) {
             //noinspection ResourceType
@@ -24675,6 +24695,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
          * @param measureSpec the measure specification to extract the size from
          * @return the size in pixels defined in the supplied measure specification
          */
+        //将32位的MeasureSpec解包，返回SpecSize，某种测量模式下的规格大小
         public static int getSize(int measureSpec) {
             return (measureSpec & ~MODE_MASK);
         }

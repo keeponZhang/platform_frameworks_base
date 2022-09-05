@@ -141,6 +141,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
     TypedValue mFixedHeightMinor;
 
     // This is the top-level view of the window, containing the window decor.
+    //这黑丝window的顶层view，包含着window的装饰
     private DecorView mDecor;
 
     // When we reuse decor views, we need to recreate the content root. This happens when the decor
@@ -149,6 +150,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
 
     // This is the view in which the window contents are placed. It is either
     // mDecor itself, or a child of mDecor where the contents go.
+    //它是用来存放window内存的view，要么是mDecor本身，要么就是mDecor的子内容
     ViewGroup mContentParent;
     // Whether the client has explicitly set the content view. If false and mContentParent is not
     // null, then the content parent was set due to window preservation.
@@ -443,6 +445,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         }
 
         if (hasFeature(FEATURE_CONTENT_TRANSITIONS)) {
+            //其实setLayoutParams它里面就涉及到绘制流程的代码了
             view.setLayoutParams(params);
             final Scene newScene = new Scene(mContentParent, view);
             transitionTo(newScene);
@@ -2303,6 +2306,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         } else {
             context = getContext();
         }
+        //直接new了一个Decorview
         return new DecorView(context, featureId, this, getAttributes());
     }
 
@@ -2330,7 +2334,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         } else {
             setFlags(FLAG_LAYOUT_IN_SCREEN|FLAG_LAYOUT_INSET_DECOR, flagsToUpdate);
         }
-
+        //可以看到有很多设备样式相关的东东，这也就是为啥我们要给Activity设备样式需要再onCreat()之前写代码的原因
         if (a.getBoolean(R.styleable.Window_windowNoTitle, false)) {
             requestFeature(FEATURE_NO_TITLE);
         } else if (a.getBoolean(R.styleable.Window_windowActionBar, false)) {
@@ -2645,6 +2649,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
 
     private void installDecor() {
         mForceDecorInstall = false;
+        //初始化mDecor
         if (mDecor == null) {
             mDecor = generateDecor(-1);
             mDecor.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
@@ -2655,6 +2660,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         } else {
             mDecor.setWindow(this);
         }
+        //初始化mContentParent
         if (mContentParent == null) {
             mContentParent = generateLayout(mDecor);
 

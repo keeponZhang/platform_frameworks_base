@@ -3645,6 +3645,7 @@ public final class ActivityThread {
             }
             if (r.window == null && !a.mFinished && willBeVisible) {
                 r.window = r.activity.getWindow();
+                //将整个的mDecorView添加到WindowManager
                 View decor = r.window.getDecorView();
                 decor.setVisibility(View.INVISIBLE);
                 ViewManager wm = a.getWindowManager();
@@ -3667,6 +3668,7 @@ public final class ActivityThread {
                 if (a.mVisibleFromClient) {
                     if (!a.mWindowAdded) {
                         a.mWindowAdded = true;
+                        //WindowManagerImpl
                         wm.addView(decor, l);
                     } else {
                         // The activity will get a callback for this {@link LayoutParams} change
@@ -6327,6 +6329,7 @@ public final class ActivityThread {
             RuntimeInit.setApplicationObject(mAppThread.asBinder());
             final IActivityManager mgr = ActivityManager.getService();
             try {
+                //mAppThread:ApplicationThread
                 mgr.attachApplication(mAppThread);
             } catch (RemoteException ex) {
                 throw ex.rethrowFromSystemServer();
@@ -6476,7 +6479,7 @@ public final class ActivityThread {
         Process.setArgV0("<pre-initialized>");
 
         Looper.prepareMainLooper();
-
+        //这里新建了一个ActivityThread线程
         ActivityThread thread = new ActivityThread();
         thread.attach(false);
 
