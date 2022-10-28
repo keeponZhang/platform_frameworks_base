@@ -2895,6 +2895,8 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      *
      * @see #getParent()
      */
+    //这个变量就是前面我们一系列文章分析View向上传递的父节点，类似于一个链表Node的next一样
+    //最终指向了ViewRoot
     protected ViewParent mParent;
 
     /**

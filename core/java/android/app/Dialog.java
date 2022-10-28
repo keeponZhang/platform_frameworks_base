@@ -147,9 +147,11 @@ public class Dialog implements DialogInterface, Window.Callback,
     public Dialog(Context context, int theme) {
         this(context, theme, true);
     }
-
+    //构造函数最终都调运了这个默认的构造函数
     Dialog(Context context, int theme, boolean createContextThemeWrapper) {
+        //默认构造函数的createContextThemeWrapper为true
         if (createContextThemeWrapper) {
+            //默认构造函数的theme为0
             if (theme == 0) {
                 TypedValue outValue = new TypedValue();
                 context.getTheme().resolveAttribute(com.android.internal.R.attr.dialogTheme,
@@ -158,14 +160,21 @@ public class Dialog implements DialogInterface, Window.Callback,
             }
             mContext = new ContextThemeWrapper(context, theme);
         } else {
+
             mContext = context;
         }
-
+        //context已经从外部传入的context对象获得值（一般是个Activity）！！！非常重要，先记住！！！
+        //获取WindowManager对象
+        //Dialog中的WindowManager成员实质和Activity里面是一样的，也就是共用了一个WindowManager
         mWindowManager = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
+        //为Dialog创建新的Window
         Window w = PolicyManager.makeNewWindow(mContext);
         mWindow = w;
+        //Dialog能够接受到按键事件的原因
         w.setCallback(this);
         w.setOnWindowDismissedCallback(this);
+        //关联WindowManager与新Window，特别注意第二个参数token为null，也就是说Dialog没有自己的token
+        //一个Window属于Dialog的话，那么该Window的mAppToken对象是null
         w.setWindowManager(mWindowManager, null, null);
         w.setGravity(Gravity.CENTER);
         mListenersHandler = new ListenersHandler(this);
@@ -250,7 +259,14 @@ public class Dialog implements DialogInterface, Window.Callback,
             dispatchOnCreate(null);
         }
     }
-
+    //可以看见Dialog的新Window与Activity的Window的type同样都为TYPE_APPLICATION，上面介绍WindowManager.LayoutParams时TYPE_APPLICATION的注释明确说过，
+    //普通应用程序窗口TYPE_APPLICATION的token必须设置为Activity的token来指定窗口属于谁。所以可以看见，既然Dialog和Activity共享同一个WindowManager（
+    //也就是上面分析的WindowManagerImpl），而WindowManagerImpl里面有个Window类型的mParentWindow变量，这个变量在Activity的attach中创建WindowManagerImpl
+    //时传入的为当前Activity的Window，而当前Activity的Window里面的mAppToken值又为当前Activity的token，所以Activity与Dialog共享了同一个mAppToken值，
+    //只是Dialog和Activity的Window对象不同。
+    //    ————————————————
+    //版权声明：本文为CSDN博主「工匠若水」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+    //原文链接：https://blog.csdn.net/yanbober/article/details/46361191
     /**
      * Start the dialog and display it on screen.  The window is placed in the
      * application layer and opaque.  Note that you should not override this
@@ -271,10 +287,12 @@ public class Dialog implements DialogInterface, Window.Callback,
         mCanceled = false;
         
         if (!mCreated) {
+            //回调Dialog的onCreate方法
             dispatchOnCreate(null);
         }
-
+        //回调Dialog的onStart方法
         onStart();
+        //类似于Activity，获取当前新Window的DecorView对象，所以有一种自定义Dialog布局的方式就是重写Dialog的onCreate方法，使用setContentView传入布局，就像前面文章分析Activity类似
         mDecor = mWindow.getDecorView();
 
         if (mActionBar == null && mWindow.hasFeature(Window.FEATURE_ACTION_BAR)) {
@@ -284,6 +302,7 @@ public class Dialog implements DialogInterface, Window.Callback,
             mActionBar = new WindowDecorActionBar(this);
         }
 
+        //获取新Window的WindowManager.LayoutParams参数，和上面分析的Activity一样type为TYPE_APPLICATION
         WindowManager.LayoutParams l = mWindow.getAttributes();
         if ((l.softInputMode
                 & WindowManager.LayoutParams.SOFT_INPUT_IS_FORWARD_NAVIGATION) == 0) {
@@ -295,6 +314,7 @@ public class Dialog implements DialogInterface, Window.Callback,
         }
 
         try {
+            //把一个View添加到Activity共用的windowManager里面去
             mWindowManager.addView(mDecor, l);
             mShowing = true;
     

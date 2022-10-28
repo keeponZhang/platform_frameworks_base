@@ -46,12 +46,13 @@ import android.os.IBinder;
  * @hide
  */
 public final class WindowManagerImpl implements WindowManager {
+    //继承自Object的单例类
     private final WindowManagerGlobal mGlobal = WindowManagerGlobal.getInstance();
     private final Display mDisplay;
     private final Window mParentWindow;
 
     private IBinder mDefaultToken;
-
+    //这里是ContextImpl静态代码块里面执行的
     public WindowManagerImpl(Display display) {
         this(display, null);
     }
@@ -60,7 +61,7 @@ public final class WindowManagerImpl implements WindowManager {
         mDisplay = display;
         mParentWindow = parentWindow;
     }
-
+    //这里是直接new一个出来,parentWindows是一个window
     public WindowManagerImpl createLocalWindowManager(Window parentWindow) {
         return new WindowManagerImpl(mDisplay, parentWindow);
     }
@@ -78,10 +79,13 @@ public final class WindowManagerImpl implements WindowManager {
     public void setDefaultToken(IBinder token) {
         mDefaultToken = token;
     }
-
+    //activity中的makeVisiable方法会调用到这里
     @Override
     public void addView(@NonNull View view, @NonNull ViewGroup.LayoutParams params) {
+        //这里会给params设置token
         applyDefaultToken(params);
+        //mParentWindow是上面分析的在Activity中获取WindowManagerImpl实例化时传入的当前Window
+        //view是Activity中最顶层的mDecor
         mGlobal.addView(view, params, mDisplay, mParentWindow);
     }
 

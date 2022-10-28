@@ -1075,9 +1075,11 @@ public class NotificationManagerService extends SystemService {
                 long callingId = Binder.clearCallingIdentity();
                 try {
                     ToastRecord record;
+                    //查看该Toast是否已经在队列当中
                     int index = indexOfToastLocked(pkg, callback);
                     // If it's already in the queue, we update it in place, we don't
                     // move it to the end of the queue.
+                    //注释说了，已经存在则直接取出update
                     if (index >= 0) {
                         record = mToastQueue.get(index);
                         record.update(duration);
@@ -1099,16 +1101,19 @@ public class NotificationManagerService extends SystemService {
                                  }
                             }
                         }
-
+                        //将Toast封装成ToastRecord对象，放入mToastQueue中
                         record = new ToastRecord(callingPid, pkg, callback, duration);
+                        //把他添加到ToastQueue队列中
                         mToastQueue.add(record);
                         index = mToastQueue.size() - 1;
+                        //将当前Toast所在的进程设置为前台进程
                         keepProcessAliveLocked(callingPid);
                     }
                     // If it's at index 0, it's the current toast.  It doesn't matter if it's
                     // new or just been updated.  Call back and tell it to show itself.
                     // If the callback fails, this will remove it from the list, so don't
                     // assume that it's valid after this.
+                    //如果index为0,说明当前入队的Toast在队头，需要调用showNextToastLocked方法直接显示
                     if (index == 0) {
                         showNextToastLocked();
                     }
@@ -2190,10 +2195,12 @@ public class NotificationManagerService extends SystemService {
     }
 
     void showNextToastLocked() {
+        //取出ToastQueue中队列最前面的ToastRecord
         ToastRecord record = mToastQueue.get(0);
         while (record != null) {
             if (DBG) Slog.d(TAG, "Show pkg=" + record.pkg + " callback=" + record.callback);
             try {
+                //Toast类中实现的ITransientNotification.Stub的Binder接口TN，调运了那个类的show方法
                 record.callback.show();
                 scheduleTimeoutLocked(record);
                 return;
@@ -2218,6 +2225,7 @@ public class NotificationManagerService extends SystemService {
     void cancelToastLocked(int index) {
         ToastRecord record = mToastQueue.get(index);
         try {
+            //回调Toast的TN中实现的hide方法
             record.callback.hide();
         } catch (RemoteException e) {
             Slog.w(TAG, "Object died trying to hide notification " + record.callback
@@ -2225,21 +2233,26 @@ public class NotificationManagerService extends SystemService {
             // don't worry about this, we're about to remove it from
             // the list anyway
         }
+        //从队列移除当前显示的Toast
         mToastQueue.remove(index);
         keepProcessAliveLocked(record.pid);
         if (mToastQueue.size() > 0) {
             // Show the next one. If the callback fails, this will remove
             // it from the list, so don't assume that the list hasn't changed
             // after this point.
+            //如果当前的Toast显示完毕队列里还有其他的Toast则显示其他的Toast
             showNextToastLocked();
         }
     }
 
     private void scheduleTimeoutLocked(ToastRecord r)
     {
+        //移除上一条消息
         mHandler.removeCallbacksAndMessages(r);
+        //依据Toast传入的duration参数LENGTH_LONG=1来判断决定多久发送消息
         Message m = Message.obtain(mHandler, MESSAGE_TIMEOUT, r);
         long delay = r.duration == Toast.LENGTH_LONG ? LONG_DELAY : SHORT_DELAY;
+        //依据设置的MESSAGE_TIMEOUT后发送消息
         mHandler.sendMessageDelayed(m, delay);
     }
 

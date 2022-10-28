@@ -545,6 +545,7 @@ public abstract class Window {
         if (wm == null) {
             wm = (WindowManager)mContext.getSystemService(Context.WINDOW_SERVICE);
         }
+        //实例化Window类的WindowManager类型成员mWindowManager
         mWindowManager = ((WindowManagerImpl)wm).createLocalWindowManager(this);
     }
 

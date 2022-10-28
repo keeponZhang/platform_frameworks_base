@@ -276,12 +276,15 @@ public class PopupWindow {
      * @param height the popup's height
      * @param focusable true if the popup can be focused, false otherwise
      */
+    //我们只分析最常用的一种构造函数
     public PopupWindow(View contentView, int width, int height, boolean focusable) {
         if (contentView != null) {
+            //获取mContext，contentView实质是View，View的mContext都是构造函数传入的，View又层级传递，所以最终这个mContext实质是Activity！！！很重要
             mContext = contentView.getContext();
+            //获取Activity的getSystemService的WindowManager
             mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         }
-
+        //进行一些Window类的成员变量初始化赋值操作
         setContentView(contentView);
         setWidth(width);
         setHeight(height);
@@ -994,8 +997,10 @@ public class PopupWindow {
 
         mIsShowing = true;
         mIsDropdown = true;
-
+        //anchor是Activity中PopWindow准备依附的View，这个View的token实质也是Activity的Window中的token，也即Activity的token
+        //第一步   初始化WindowManager.LayoutParams
         WindowManager.LayoutParams p = createPopupLayout(anchor.getWindowToken());
+        //第二步
         preparePopup(p);
 
         updateAboveAnchor(findDropDownPosition(anchor, p, xoff, yoff, gravity));
@@ -1004,7 +1009,7 @@ public class PopupWindow {
         if (mWidthMode < 0) p.width = mLastWidth = mWidthMode;
 
         p.windowAnimations = computeAnimationResource();
-
+        //第三步
         invokePopup(p);
     }
 
@@ -1057,8 +1062,14 @@ public class PopupWindow {
             throw new IllegalStateException("You must specify a valid content view by "
                     + "calling setContentView() before attempting to show the popup.");
         }
-
+//        可以看见preparePopup方法的作用就是判断设置View，如果有背景则会在传入的contentView外面包一层PopupViewContainer
+//        （实质是一个重写了事件处理的FrameLayout）之后作为mPopupView，如果没有背景则直接用contentView作为mPopupView。我们再来看下这里的PopupViewContainer类
+//————————————————
+//        版权声明：本文为CSDN博主「工匠若水」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+//        原文链接：https://blog.csdn.net/yanbober/article/details/46361191
+        //有无设置PopWindow的background区别
         if (mBackground != null) {
+            //如果有背景则创建一个PopupViewContainer对象的ViewGroup
             final ViewGroup.LayoutParams layoutParams = mContentView.getLayoutParams();
             int height = ViewGroup.LayoutParams.MATCH_PARENT;
             if (layoutParams != null &&
@@ -1068,15 +1079,18 @@ public class PopupWindow {
 
             // when a background is available, we embed the content view
             // within another view that owns the background drawable
+            //把背景设置给PopupViewContainer的ViewGroup
             PopupViewContainer popupViewContainer = new PopupViewContainer(mContext);
             PopupViewContainer.LayoutParams listParams = new PopupViewContainer.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, height
             );
             popupViewContainer.setBackground(mBackground);
+            //把我们构造函数传入的View添加到这个ViewGroup
             popupViewContainer.addView(mContentView, listParams);
-
+            //返回这个ViewGroup
             mPopupView = popupViewContainer;
         } else {
+            //如果没有通过PopWindow的setBackgroundDrawable设置背景则直接赋值当前传入的View为PopWindow的View
             mPopupView = mContentView;
         }
 
@@ -1095,6 +1109,13 @@ public class PopupWindow {
      *
      * @param p the layout parameters of the popup's content view
      */
+    //可以看见，这里使用了Activity的WindowManager将我们的PopWindow进行了显示。
+    //
+    //到此可以发现，PopWindow的实质无非也是使用WindowManager的addView、updateViewLayout、removeView进行一些操作展示。
+    //与Dialog不同的地方是没有新new Window而已（也就没法设置callback，无法消费事件，也就是前面说的PopupWindow弹出后可以继续与依赖的Activity进行交互的原因）。
+    //    ————————————————
+    //版权声明：本文为CSDN博主「工匠若水」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+    //原文链接：https://blog.csdn.net/yanbober/article/details/46361191
     private void invokePopup(WindowManager.LayoutParams p) {
         if (mContext != null) {
             p.packageName = mContext.getPackageName();
@@ -1123,21 +1144,28 @@ public class PopupWindow {
     private WindowManager.LayoutParams createPopupLayout(IBinder token) {
         // generates the layout parameters for the drop down
         // we want a fixed size view located at the bottom left of the anchor
+        //实例化一个默认的WindowManager.LayoutParams，其中type=TYPE_APPLICATION
         WindowManager.LayoutParams p = new WindowManager.LayoutParams();
         // these gravity settings put the view at the top left corner of the
         // screen. The view is then positioned to the appropriate location
         // by setting the x and y offsets to match the anchor's bottom
         // left corner
+        //设置Gravity
         p.gravity = Gravity.START | Gravity.TOP;
+        //设置宽高
         p.width = mLastWidth = mWidth;
         p.height = mLastHeight = mHeight;
+        //依据背景设置format
         if (mBackground != null) {
             p.format = mBackground.getOpacity();
         } else {
             p.format = PixelFormat.TRANSLUCENT;
         }
+        //设置flags
         p.flags = computeFlags(p.flags);
+        //修改type=WindowManager.LayoutParams.TYPE_APPLICATION_PANEL，mWindowLayoutType有初始值，type类型为子窗口
         p.type = mWindowLayoutType;
+        //设置token为Activity的token
         p.token = token;
         p.softInputMode = mSoftInputMode;
         p.setTitle("PopupWindow:" + Integer.toHexString(hashCode()));
@@ -1676,7 +1704,12 @@ public class PopupWindow {
         mAnchorYoff = yoff;
         mAnchoredGravity = gravity;
     }
-
+    //可以看见，这个PopupViewContainer是一个PopWindow的内部私有类，它继承了FrameLayout，在其中重写了Key和Touch事件的分发处理逻辑。
+    //同时查阅PopupView可以发现，PopupView类自身没有重写Key和Touch事件的处理，所以如果没有将传入的View对象放入封装的ViewGroup中，
+    //则点击Back键或者PopWindow以外的区域PopWindow是不会消失的（其实PopWindow中没有向Activity及Dialog一样new新的Window，所以不会有新的callback设置，也就没法处理事件消费了）。
+    //    ————————————————
+    //版权声明：本文为CSDN博主「工匠若水」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+    //原文链接：https://blog.csdn.net/yanbober/article/details/46361191
     private class PopupViewContainer extends FrameLayout {
         private static final String TAG = "PopupWindow.PopupViewContainer";
 

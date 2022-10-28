@@ -97,6 +97,7 @@ public class Toast {
      */
     public Toast(Context context) {
         mContext = context;
+        //创建了一个TN
         mTN = new TN();
         mTN.mY = context.getResources().getDimensionPixelSize(
                 com.android.internal.R.dimen.toast_y_offset);
@@ -111,13 +112,15 @@ public class Toast {
         if (mNextView == null) {
             throw new RuntimeException("setView must have been called");
         }
-
+        //通过AIDL（Binder）通信拿到NotificationManagerService的服务访问接口，当前Toast类相当于上面例子的客户端！！！相当重要！！！
         INotificationManager service = getService();
         String pkg = mContext.getOpPackageName();
         TN tn = mTN;
         tn.mNextView = mNextView;
 
         try {
+            //把TN对象和一些参数传递到远程NotificationManagerService中去
+            //NotificationManagerService
             service.enqueueToast(pkg, tn, mDuration);
         } catch (RemoteException e) {
             // Empty
@@ -255,17 +258,24 @@ public class Toast {
      *
      */
     public static Toast makeText(Context context, CharSequence text, @Duration int duration) {
+        //new一个Toast对象
         Toast result = new Toast(context);
 
+        //获取前面有篇文章分析的LayoutInflater
         LayoutInflater inflate = (LayoutInflater)
                 context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        //加载解析Toast的布局，实质transient_notification.xml是一个LinearLayout中套了一个@android:id/message的TextView而已
         View v = inflate.inflate(com.android.internal.R.layout.transient_notification, null);
+        //取出布局中的TextView
         TextView tv = (TextView)v.findViewById(com.android.internal.R.id.message);
+        //把我们的文字设置到TextView上
         tv.setText(text);
-        
+
+        //设置一些属性
         result.mNextView = v;
         result.mDuration = duration;
 
+        //返回新建的Toast
         return result;
     }
 
@@ -312,17 +322,19 @@ public class Toast {
     // All the gunk below is the interaction with the Notification Service, which handles
     // the proper ordering of these system-wide.
     // =======================================================================================
-
+    //远程NotificationManagerService的服务访问接口
     private static INotificationManager sService;
 
     static private INotificationManager getService() {
+        //单例模式
         if (sService != null) {
             return sService;
         }
+        //通过AIDL（Binder）通信拿到NotificationManagerService的服务访问接口
         sService = INotificationManager.Stub.asInterface(ServiceManager.getService("notification"));
         return sService;
     }
-
+    //类似于上面例子的服务端实例化的Service内部类Binder
     private static class TN extends ITransientNotification.Stub {
         final Runnable mShow = new Runnable() {
             @Override
@@ -341,7 +353,8 @@ public class Toast {
         };
 
         private final WindowManager.LayoutParams mParams = new WindowManager.LayoutParams();
-        final Handler mHandler = new Handler();    
+        //仅仅是实例化了一个Handler，非常重要！！！！！！！！
+        final Handler mHandler = new Handler();
 
         int mGravity;
         int mX, mY;
@@ -372,6 +385,7 @@ public class Toast {
         /**
          * schedule handleShow into the right thread
          */
+        //实现了AIDL的show与hide方法
         @Override
         public void show() {
             if (localLOGV) Log.v(TAG, "SHOW: " + this);
@@ -392,6 +406,7 @@ public class Toast {
                     + " mNextView=" + mNextView);
             if (mView != mNextView) {
                 // remove the old view if necessary
+                //如果有必要就通过WindowManager的remove删掉旧的
                 handleHide();
                 mView = mNextView;
                 Context context = mView.getContext().getApplicationContext();
@@ -399,6 +414,7 @@ public class Toast {
                 if (context == null) {
                     context = mView.getContext();
                 }
+                //通过得到的context（一般是ContextImpl的context）获取WindowManager对象（上一篇文章分析的单例的WindowManager）
                 mWM = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
                 // We can resolve the Gravity here by using the Locale for getting
                 // the layout direction
@@ -416,11 +432,13 @@ public class Toast {
                 mParams.verticalMargin = mVerticalMargin;
                 mParams.horizontalMargin = mHorizontalMargin;
                 mParams.packageName = packageName;
+                //在把Toast的View添加之前发现Toast的View已经被添加过（有partent）则删掉
                 if (mView.getParent() != null) {
                     if (localLOGV) Log.v(TAG, "REMOVE! " + mView + " in " + this);
                     mWM.removeView(mView);
                 }
                 if (localLOGV) Log.v(TAG, "ADD! " + mView + " in " + this);
+                //把Toast的View添加到窗口，其中mParams.type在构造函数中赋值为TYPE_TOAST！！！！！！特别重要
                 mWM.addView(mView, mParams);
                 trySendAccessibilityEvent();
             }
@@ -448,6 +466,7 @@ public class Toast {
                 // note: checking parent() just to make sure the view has
                 // been added...  i have seen cases where we get here when
                 // the view isn't yet added, so let's try not to crash.
+                //注释说得很清楚了，不解释，就是remove
                 if (mView.getParent() != null) {
                     if (localLOGV) Log.v(TAG, "REMOVE! " + mView + " in " + this);
                     mWM.removeView(mView);

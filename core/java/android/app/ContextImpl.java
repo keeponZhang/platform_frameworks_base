@@ -349,7 +349,7 @@ class ContextImpl extends Context {
                 return new WallpaperManager(ctx.getOuterContext(),
                         ctx.mMainThread.getHandler());
             }};
-
+    //这里有一堆类似的XXX_SERVICE的注册
     static {
         registerService(ACCESSIBILITY_SERVICE, new ServiceFetcher() {
                 public Object getService(ContextImpl ctx) {
@@ -643,6 +643,8 @@ class ContextImpl extends Context {
                         }
                         display = mDefaultDisplay;
                     }
+                    //返回一个WindowManagerImpl实例
+                    //我们都知道Java的静态代码块是类加载是执行一次的，也就相当于一个全局的，这样就相当于每个Application只有一个WindowManagerImpl(display)实例
                     return new WindowManagerImpl(display);
                 }});
 

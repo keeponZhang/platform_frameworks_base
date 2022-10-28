@@ -4560,10 +4560,21 @@ public class Activity extends ContextThemeWrapper
             }
         }
     }
-
+    //特别注意，看见makeVisible方法的wm变量没，这个变量就是Window类中通过调运WindowManagerImpl的createLocalWindowManager创建的实例，
+    //也就是说每一个Activity都会新创建这么一个WindowManager实例来显示Activity的界面的，有点和上面分析的ContextImpl中static块创建的WindowManager
+    //不太一样的地方就在于Context的WindowManager对每个APP来说是一个全局单例的而Activity的WindowManager
+    // 是每个Activity都会新创建一个的（其实你从上面分析的两个实例化WindowManagerImpl的构造函数参数传递就可以看出来，
+    // Activity中Window的WindowManager成员在构造实例化时传入给WindowManagerImpl中mParentWindow成员的是当前Window对象，
+    // 而ContextImpl的static块中单例实例化WindowManagerImpl时传入给WindowManagerImpl中mParentWindow成员的是null值）
+    //————————————————
+    //版权声明：本文为CSDN博主「工匠若水」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+    //原文链接：https://blog.csdn.net/yanbober/article/details/46361191
     void makeVisible() {
         if (!mWindowAdded) {
+            //也就是获取Activity的mWindowManager
+            //这个mWindowManager是在Activity的attach中通过mWindow.getWindowManager()获得
             ViewManager wm = getWindowManager();
+            //调运的实质就是ViewManager接口的addView方法，传入的是mDecorView
             wm.addView(mDecor, getWindow().getAttributes());
             mWindowAdded = true;
         }
@@ -5928,7 +5939,7 @@ public class Activity extends ContextThemeWrapper
         attachBaseContext(context);
 
         mFragments.attachActivity(this, mContainer, null);
-
+        //创建Window类型的mWindow对象，实际为PhoneWindow类实现了抽象Window类
         mWindow = PolicyManager.makeNewWindow(this);
         mWindow.setCallback(this);
         mWindow.setOnWindowDismissedCallback(this);
@@ -5962,7 +5973,7 @@ public class Activity extends ContextThemeWrapper
                         Looper.myLooper());
             }
         }
-
+        //通过抽象Window类的setWindowManager方法给Window类的成员变量WindowManager赋值实例化
         mWindow.setWindowManager(
                 (WindowManager)context.getSystemService(Context.WINDOW_SERVICE),
                 mToken, mComponent.flattenToString(),
@@ -5970,6 +5981,7 @@ public class Activity extends ContextThemeWrapper
         if (mParent != null) {
             mWindow.setContainer(mParent.getWindow());
         }
+        //把抽象Window类相关的WindowManager对象拿出来关联到Activity的WindowManager类型成员变量mWindowManager
         mWindowManager = mWindow.getWindowManager();
         mCurrentConfig = config;
     }
