@@ -4722,6 +4722,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @see #setClickable(boolean)
      */
     public void setOnClickListener(OnClickListener l) {
+        //有意思的是如果调运setOnClickListener方法设置监听且控件是disclickable的情况下默认会帮设置为clickable
         if (!isClickable()) {
             setClickable(true);
         }
@@ -8460,10 +8461,11 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
             // Defensive cleanup for new gesture
             stopNestedScroll();
         }
-
+        //判断当前View是否没被遮住等
         if (onFilterTouchEventForSecurity(event)) {
             //noinspection SimplifiableIfStatement
             ListenerInfo li = mListenerInfo;
+            //优先onTouch
             if (li != null && li.mOnTouchListener != null
                     && (mViewFlags & ENABLED_MASK) == ENABLED
                     && li.mOnTouchListener.onTouch(this, event)) {
@@ -9418,6 +9420,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
             }
             // A disabled view that is clickable still consumes the touch
             // events, it just doesn't respond to them.
+            //如果控件（View）是disenable状态，同时是可以clickable的则onTouchEvent直接消费事件返回true
             return (((viewFlags & CLICKABLE) == CLICKABLE ||
                     (viewFlags & LONG_CLICKABLE) == LONG_CLICKABLE));
         }
@@ -9433,6 +9436,8 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
             switch (event.getAction()) {
                 case MotionEvent.ACTION_UP:
                     boolean prepressed = (mPrivateFlags & PFLAG_PREPRESSED) != 0;
+                    //首先判断了是否按下过，同时是不是可以得到焦点，然后尝试获取焦点，然后判断如果不是longPressed则通过post在UI
+                    //Thread中执行一个PerformClick的Runnable，也就是performClick方法
                     if ((mPrivateFlags & PFLAG_PRESSED) != 0 || prepressed) {
                         // take focus if we don't have it already and we should in
                         // touch mode.
