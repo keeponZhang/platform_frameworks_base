@@ -172,6 +172,7 @@ public class Resources {
     }
 
     /** @hide */
+    //哎呀妈呀，这不就解释了我们创建不同版本的App时默认主题不一样的原因么，哈哈，原来如果我们没有设置主题Theme，系统会依据版本给我们选择一个默认的主题，也就是上面这段代码实现了该功能
     public static int selectSystemTheme(int curTheme, int targetSdkVersion, int orig, int holo,
             int dark, int deviceDefault) {
         if (curTheme != 0) {
@@ -1353,6 +1354,7 @@ public class Resources {
          *              if not already defined in the theme.
          */
         public void applyStyle(int resId, boolean force) {
+            //这里用AssetManager
             AssetManager.applyThemeStyle(mTheme, resId, force);
 
             mThemeResId = resId;

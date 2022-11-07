@@ -2705,6 +2705,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
     /**
      * {@inheritDoc}
      */
+    //ViewRootImpl里面调用
     @Override
     void dispatchAttachedToWindow(AttachInfo info, int visibility) {
         mGroupFlags |= FLAG_PREVENT_DISPATCH_ATTACHED_TO_WINDOW;
@@ -3218,6 +3219,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
             final View child = (preorderedList == null)
                     ? children[childIndex] : preorderedList.get(childIndex);
             if ((child.mViewFlags & VISIBILITY_MASK) == VISIBLE || child.getAnimation() != null) {
+                //调用drawChild
                 more |= drawChild(canvas, child, drawingTime);
             }
         }
@@ -3425,6 +3427,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
      * @return True if an invalidate() was issued
      */
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        //调运了子View的draw()方法
         return child.draw(canvas, this, drawingTime);
     }
 
@@ -3804,6 +3807,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
         // addViewInner() will call child.requestLayout() when setting the new LayoutParams
         // therefore, we call requestLayout() on ourselves before, so that the child's request
         // will be blocked at our level
+        //该方法稍后后面会详细分析
         requestLayout();
         invalidate(true);
         addViewInner(child, index, params, false);
@@ -4709,7 +4713,8 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
                         view.mPrivateFlags = (view.mPrivateFlags & ~PFLAG_DIRTY_MASK) | opaqueFlag;
                     }
                 }
-
+                //循环层层上级调运，直到ViewRootImpl会返回null
+                //这个过程最后传递到ViewRootImpl的invalidateChildInParent方法结束
                 parent = parent.invalidateChildInParent(location, dirty);
                 if (view != null) {
                     // Account for transform on current parent
@@ -5058,6 +5063,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
             if (mTransition != null) {
                 mTransition.layoutChange(this);
             }
+            //ViewGroup的layout方法实质还是调运了View父类的layout方法，
             super.layout(l, t, r, b);
         } else {
             // record the fact that we noop'd it; request layout when transition finishes
@@ -5068,6 +5074,8 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
     /**
      * {@inheritDoc}
      */
+    //ViewGroup的onLayout()方法竟然是一个抽象方法，这就是说所有ViewGroup的子类都必须重写这个方法。所以在自定义ViewGroup控件中，
+    //onLayout配合onMeasure方法一起使用可以实现自定义View的复杂布局
     @Override
     protected abstract void onLayout(boolean changed,
             int l, int t, int r, int b);
@@ -5546,15 +5554,17 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
     protected void measureChildWithMargins(View child,
             int parentWidthMeasureSpec, int widthUsed,
             int parentHeightMeasureSpec, int heightUsed) {
+        //获取子视图的LayoutParams
         final MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
-
+        //调整MeasureSpec
+        //通过这两个参数以及子视图本身的LayoutParams来共同决定子视图的测量规格
         final int childWidthMeasureSpec = getChildMeasureSpec(parentWidthMeasureSpec,
                 mPaddingLeft + mPaddingRight + lp.leftMargin + lp.rightMargin
                         + widthUsed, lp.width);
         final int childHeightMeasureSpec = getChildMeasureSpec(parentHeightMeasureSpec,
                 mPaddingTop + mPaddingBottom + lp.topMargin + lp.bottomMargin
                         + heightUsed, lp.height);
-
+        //调运子View的measure方法，子View的measure中会回调子View的onMeasure方法
         child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
     }
 
@@ -5578,27 +5588,36 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
      * @return a MeasureSpec integer for the child
      */
     public static int getChildMeasureSpec(int spec, int padding, int childDimension) {
+        //获取当前Parent View的Mode和Size
         int specMode = MeasureSpec.getMode(spec);
         int specSize = MeasureSpec.getSize(spec);
-
+        //获取Parent size与padding差值（也就是Parent剩余大小），若差值小于0直接返回0
         int size = Math.max(0, specSize - padding);
-
+        //定义返回值存储变量
         int resultSize = 0;
         int resultMode = 0;
-
+        //依据当前Parent的Mode进行switch分支逻辑
         switch (specMode) {
         // Parent has imposed an exact size on us
-        case MeasureSpec.EXACTLY:
+            //默认Root View的Mode就是EXACTLY
+            case MeasureSpec.EXACTLY:
             if (childDimension >= 0) {
+                //如果child的layout_wOrh属性在xml或者java中给予具体大于等于0的数值
+                //设置child的size为真实layout_wOrh属性值，mode为EXACTLY
                 resultSize = childDimension;
                 resultMode = MeasureSpec.EXACTLY;
             } else if (childDimension == LayoutParams.MATCH_PARENT) {
                 // Child wants to be our size. So be it.
+                //如果child的layout_wOrh属性在xml或者java中给予MATCH_PARENT
+                // Child wants to be our size. So be it.
+                //设置child的size为size，mode为EXACTLY
                 resultSize = size;
                 resultMode = MeasureSpec.EXACTLY;
             } else if (childDimension == LayoutParams.WRAP_CONTENT) {
                 // Child wants to determine its own size. It can't be
                 // bigger than us.
+                //如果child的layout_wOrh属性在xml或者java中给予WRAP_CONTENT
+                //设置child的size为size，mode为AT_MOST
                 resultSize = size;
                 resultMode = MeasureSpec.AT_MOST;
             }
@@ -5642,6 +5661,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
             }
             break;
         }
+        //将mode与size通过MeasureSpec方法整合为32位整数返回
         return MeasureSpec.makeMeasureSpec(resultSize, resultMode);
     }
 

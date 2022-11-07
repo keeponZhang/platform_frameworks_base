@@ -408,7 +408,7 @@ public abstract class LayoutInflater {
             Log.d(TAG, "INFLATING from resource: \"" + res.getResourceName(resource) + "\" ("
                     + Integer.toHexString(resource) + ")");
         }
-
+        //获取到XmlResourceParser接口的实例（Android默认实现类为Pull解析XmlPullParser）
         final XmlResourceParser parser = res.getLayout(resource);
         try {
             return inflate(parser, root, attachToRoot);
@@ -446,6 +446,7 @@ public abstract class LayoutInflater {
             final AttributeSet attrs = Xml.asAttributeSet(parser);
             Context lastContext = (Context)mConstructorArgs[0];
             mConstructorArgs[0] = mContext;
+            //定义返回值，初始化为传入的形参root
             View result = root;
 
             try {
@@ -455,12 +456,12 @@ public abstract class LayoutInflater {
                         type != XmlPullParser.END_DOCUMENT) {
                     // Empty
                 }
-
+                //如果一开始就是END_DOCUMENT，那说明xml文件有问题
                 if (type != XmlPullParser.START_TAG) {
                     throw new InflateException(parser.getPositionDescription()
                             + ": No start tag found!");
                 }
-
+                //有了上面判断说明这里type一定是START_TAG，也就是xml文件里的root node
                 final String name = parser.getName();
                 
                 if (DEBUG) {
@@ -471,14 +472,19 @@ public abstract class LayoutInflater {
                 }
 
                 if (TAG_MERGE.equals(name)) {
+                    //处理merge tag的情况（merge，你懂的，APP的xml性能优化）
+                    //root必须非空且attachToRoot为true，否则抛异常结束（APP使用merge时要注意的地方，
+                    //因为merge的xml并不代表某个具体的view，只是将它包起来的其他xml的内容加到某个上层
+                    //ViewGroup中。）
                     if (root == null || !attachToRoot) {
                         throw new InflateException("<merge /> can be used only with a valid "
                                 + "ViewGroup root and attachToRoot=true");
                     }
-
+                    //递归inflate方法调运
                     rInflate(parser, root, attrs, false, false);
                 } else {
                     // Temp is the root view that was found in the xml
+                    //xml文件中的root view，根据tag节点创建view对象
                     final View temp = createViewFromTag(root, name, attrs, false);
 
                     ViewGroup.LayoutParams params = null;
@@ -489,10 +495,12 @@ public abstract class LayoutInflater {
                                     root);
                         }
                         // Create layout params that match root, if supplied
+                        //根据root生成合适的LayoutParams实例
                         params = root.generateLayoutParams(attrs);
                         if (!attachToRoot) {
                             // Set the layout params for temp if we are not
                             // attaching. (If we are, we use addView, below)
+                            //如果attachToRoot=false就调用view的setLayoutParams方法
                             temp.setLayoutParams(params);
                         }
                     }
@@ -501,6 +509,7 @@ public abstract class LayoutInflater {
                         System.out.println("-----> start inflating children");
                     }
                     // Inflate all children under temp
+                    //递归inflate剩下的children
                     rInflate(parser, temp, attrs, true, true);
                     if (DEBUG) {
                         System.out.println("-----> done inflating children");
@@ -509,12 +518,14 @@ public abstract class LayoutInflater {
                     // We are supposed to attach all the views we found (int temp)
                     // to root. Do that now.
                     if (root != null && attachToRoot) {
+                        //root非空且attachToRoot=true则将xml文件的root view加到形参提供的root里
                         root.addView(temp, params);
                     }
 
                     // Decide whether to return the root that was passed in or the
                     // top view found in xml.
                     if (root == null || !attachToRoot) {
+                        //返回xml里解析的root view
                         result = temp;
                     }
                 }
@@ -536,7 +547,7 @@ public abstract class LayoutInflater {
             }
 
             Trace.traceEnd(Trace.TRACE_TAG_VIEW);
-
+            //返回参数root或xml文件里的root view
             return result;
         }
     }
@@ -781,28 +792,33 @@ public abstract class LayoutInflater {
 
         final int depth = parser.getDepth();
         int type;
-
+        //XmlPullParser解析器的标准解析模式
         while (((type = parser.next()) != XmlPullParser.END_TAG ||
                 parser.getDepth() > depth) && type != XmlPullParser.END_DOCUMENT) {
-
+            //找到START_TAG节点程序才继续执行这个判断语句之后的逻辑
             if (type != XmlPullParser.START_TAG) {
                 continue;
             }
-
+            //获取Name标记
             final String name = parser.getName();
-            
+            //处理REQUEST_FOCUS的标记
             if (TAG_REQUEST_FOCUS.equals(name)) {
                 parseRequestFocus(parser, parent);
             } else if (TAG_TAG.equals(name)) {
+                //处理tag标记
                 parseViewTag(parser, parent, attrs);
             } else if (TAG_INCLUDE.equals(name)) {
+                //处理include标记
                 if (parser.getDepth() == 0) {
+                    //include节点如果是根节点就抛异常
                     throw new InflateException("<include /> cannot be the root element");
                 }
                 parseInclude(parser, parent, attrs, inheritContext);
             } else if (TAG_MERGE.equals(name)) {
+                //merge节点必须是xml文件里的根节点（这里不该再出现merge节点）
                 throw new InflateException("<merge /> must be the root element");
             } else {
+                //其他自定义节点
                 final View view = createViewFromTag(parent, name, attrs, inheritContext);
                 final ViewGroup viewGroup = (ViewGroup) parent;
                 final ViewGroup.LayoutParams params = viewGroup.generateLayoutParams(attrs);
@@ -810,7 +826,7 @@ public abstract class LayoutInflater {
                 viewGroup.addView(view, params);
             }
         }
-
+        //parent的所有子节点都inflate完毕的时候回onFinishInflate方法
         if (finishInflate) parent.onFinishInflate();
     }
 

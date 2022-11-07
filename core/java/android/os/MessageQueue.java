@@ -123,7 +123,8 @@ public final class MessageQueue {
             mPtr = 0;
         }
     }
-
+    //如果当前MessageQueue中存在待处理的消息mMessages就将这个消息出队，然后让下一条消息成为mMessages，
+    //否则就进入一个阻塞状态（在上面Looper类的loop方法上面也有英文注释，明确说到了阻塞特性），一直等到有新的消息入队
     Message next() {
         // Return here if the message loop has already quit and been disposed.
         // This can happen if the application tries to restart a looper after quit
@@ -230,6 +231,8 @@ public final class MessageQueue {
     }
 
     void quit(boolean safe) {
+        //通过判断标记mQuitAllowed来决定该消息队列是否可以退出，然而当mQuitAllowed为fasle时抛出的异常竟然是”Main thread not allowed to quit.”，Main Thread，
+        //所以可以说明Main Thread关联的Looper一一对应的MessageQueue消息队列是不能通过该方法退出的.
         if (!mQuitAllowed) {
             throw new IllegalStateException("Main thread not allowed to quit.");
         }
@@ -331,6 +334,7 @@ public final class MessageQueue {
 
             msg.markInUse();
             msg.when = when;
+            //mMessages对象表示当前待处理的消息
             Message p = mMessages;
             boolean needWake;
             if (p == null || when == 0 || when < p.when) {

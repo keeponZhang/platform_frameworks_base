@@ -196,6 +196,7 @@ public abstract class AsyncTask<Params, Progress, Result> {
     /**
      * An {@link Executor} that can be used to execute tasks in parallel.
      */
+    //看见没有，实质就是在一个线程池中执行，这个THREAD_POOL_EXECUTOR线程池是一个常量，也就是说整个App中不论有多少AsyncTask都只有这一个线程池
     public static final Executor THREAD_POOL_EXECUTOR
             = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE,
                     TimeUnit.SECONDS, sPoolWorkQueue, sThreadFactory);
@@ -204,6 +205,7 @@ public abstract class AsyncTask<Params, Progress, Result> {
      * An {@link Executor} that executes tasks one at a time in serial
      * order.  This serialization is global to a particular process.
      */
+    //SerialExecutor在AsyncTask中是以常量的形式被使用的，所以在整个应用程序中的所有AsyncTask实例都会共用同一个SerialExecutor对象
     public static final Executor SERIAL_EXECUTOR = new SerialExecutor();
 
     private static final int MESSAGE_POST_RESULT = 0x1;
@@ -219,7 +221,10 @@ public abstract class AsyncTask<Params, Progress, Result> {
     
     private final AtomicBoolean mCancelled = new AtomicBoolean();
     private final AtomicBoolean mTaskInvoked = new AtomicBoolean();
-
+    //SerialExecutor是使用ArrayDeque这个队列来管理Runnable对象的，如果我们一次性启动了很多个任务，首先在第一次运行execute()方法的时候会调用ArrayDeque的offer()
+    //方法将传入的Runnable对象添加到队列的最后，然后判断mActive对象是不是等于null，第一次运行是null，然后调用scheduleNext()方法，在这个方法中会从队列的头部取值，
+    //并赋值给mActive对象，然后调用THREAD_POOL_EXECUTOR去执行取出的取出的Runnable对象。之后如果再有新的任务被执行时就等待上一个任务执行完毕后才会得到执行，
+    //所以说同一时刻只会有一个线程正在执行，其余的均处于等待状态，这就是SerialExecutor类的核心作用
     private static class SerialExecutor implements Executor {
         final ArrayDeque<Runnable> mTasks = new ArrayDeque<Runnable>();
         Runnable mActive;
@@ -241,6 +246,7 @@ public abstract class AsyncTask<Params, Progress, Result> {
 
         protected synchronized void scheduleNext() {
             if ((mActive = mTasks.poll()) != null) {
+                //放到线程池执行
                 THREAD_POOL_EXECUTOR.execute(mActive);
             }
         }
@@ -282,17 +288,22 @@ public abstract class AsyncTask<Params, Progress, Result> {
     /**
      * Creates a new asynchronous task. This constructor must be invoked on the UI thread.
      */
+    //必须初始化在主线程
+    //整个构造函数就只初始化了两个AsyncTask类的成员变量,mWorker和mFuture
     public AsyncTask() {
+        //mWorker为匿名内部类的实例对象WorkerRunnable（实现了Callable接口）
         mWorker = new WorkerRunnable<Params, Result>() {
             public Result call() throws Exception {
                 mTaskInvoked.set(true);
 
                 Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
                 //noinspection unchecked
+                //在子线程执行doInBackground方法
+                //执行完再调用postResult方法
                 return postResult(doInBackground(mParams));
             }
         };
-
+        //mFuture为匿名内部类的实例对象FutureTask，传入了mWorker作为形参（重写了FutureTask类的done方法）
         mFuture = new FutureTask<Result>(mWorker) {
             @Override
             protected void done() {
@@ -574,6 +585,8 @@ public abstract class AsyncTask<Params, Progress, Result> {
      */
     public final AsyncTask<Params, Progress, Result> executeOnExecutor(Executor exec,
             Params... params) {
+        //首先判断AsyncTask异步任务的状态，当处于RUNNING和FINISHED时就报IllegalStateException非法状态异常。
+        //由此可以看见一个AsyncTask的execute方法只能被调运一次
         if (mStatus != Status.PENDING) {
             switch (mStatus) {
                 case RUNNING:

@@ -699,6 +699,10 @@ public abstract class Service extends ContextWrapper implements ComponentCallbac
             Context context,
             ActivityThread thread, String className, IBinder token,
             Application application, Object activityManager) {
+        //特别特别留意这里！！！
+        //与上面handleCreateService方法中setOuterContext语句类似，不同的在于：
+        //通过ContextWrapper类的attachBaseContext方法，将handleCreateService中实例化的ContextImpl对象传入到ContextWrapper类的mBase变量，
+        //这样ContextWrapper（Context子类）类的成员mBase就被实例化为Context的实现类ContextImpl
         attachBaseContext(context);
         mThread = thread;           // NOTE:  unused - remove?
         mClassName = className;

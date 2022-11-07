@@ -364,6 +364,8 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         // Note: FEATURE_CONTENT_TRANSITIONS may be set in the process of installing the window
         // decor, when theme attributes and the like are crystalized. Do not check the feature
         // before this happens.
+        //首先判断mContentParent是否为null，也就是第一次调运）；如果是第一次调用，则调用installDecor()方法，
+        //否则判断是否设置FEATURE_CONTENT_TRANSITIONS Window属性（默认false）
         if (mContentParent == null) {
             installDecor();
         } else if (!hasFeature(FEATURE_CONTENT_TRANSITIONS)) {
@@ -375,6 +377,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
                     getContext());
             transitionTo(newScene);
         } else {
+            //将我们的资源文件通过LayoutInflater对象转换为View树，并且添加至mContentParent视图中（其中mLayoutInflater是在PhoneWindow的构造函数中得到实例对象的LayoutInflater.from(context);）
             mLayoutInflater.inflate(layoutResID, mContentParent);
         }
         final Callback cb = getCallback();
@@ -387,7 +390,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
     public void setContentView(View view) {
         setContentView(view, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
     }
-
+    //该方法与setContentView(int layoutResID)类似，只是少了LayoutInflater将xml文件解析装换为View而已，这里直接使用View的addView方法追加道了当前mContentParent而已。
     @Override
     public void setContentView(View view, ViewGroup.LayoutParams params) {
         // Note: FEATURE_CONTENT_TRANSITIONS may be set in the process of installing the window
@@ -3313,6 +3316,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
     }
 
     protected DecorView generateDecor() {
+        //仅仅是new一个DecorView的实例
         return new DecorView(getContext(), -1);
     }
 
@@ -3333,9 +3337,9 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
 
     protected ViewGroup generateLayout(DecorView decor) {
         // Apply data from current theme.
-
+        //获取当前主题，重点！！！！！！！
         TypedArray a = getWindowStyle();
-
+        //依据主题style设置一堆值进行设置
         if (false) {
             System.out.println("From style:");
             String s = "Attrs:";
@@ -3345,7 +3349,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
             }
             System.out.println(s);
         }
-
+        //解析一堆主题属性，譬如下面的是否浮动window（dialog）等
         mIsFloating = a.getBoolean(R.styleable.Window_windowIsFloating, false);
         int flagsToUpdate = (FLAG_LAYOUT_IN_SCREEN|FLAG_LAYOUT_INSET_DECOR)
                 & (~getForcedWindowFlags());
@@ -3541,8 +3545,10 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         // Inflate the window decor.
 
         int layoutResource;
+        //其实我们平时requestWindowFeature()设置的值就是在这里通过getLocalFeature()获取的；而android:theme属性也是通过这里的getWindowStyle()获取的
         int features = getLocalFeatures();
         // System.out.println("Features: 0x" + Integer.toHexString(features));
+        //根据设定好的features值选择不同的窗口修饰布局文件,得到layoutResource值
         if ((features & (1 << FEATURE_SWIPE_TO_DISMISS)) != 0) {
             layoutResource = R.layout.screen_swipe_dismiss;
         } else if ((features & ((1 << FEATURE_LEFT_ICON) | (1 << FEATURE_RIGHT_ICON))) != 0) {
@@ -3601,7 +3607,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
         }
 
         mDecor.startChanging();
-
+        //把选中的窗口修饰布局文件添加到DecorView对象里，并且指定contentParent值
         View in = mLayoutInflater.inflate(layoutResource, null);
         decor.addView(in, new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
         mContentRoot = (ViewGroup) in;
@@ -3663,9 +3669,11 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
     public void alwaysReadCloseOnTouchAttr() {
         mAlwaysReadCloseOnTouchAttr = true;
     }
-
+    //installDecor方法实质就是产生mDecor和mContentParent对象。
     private void installDecor() {
         if (mDecor == null) {
+            //generateDecor()创建一个DecorView(该类是
+            //    FrameLayout子类，即一个ViewGroup视图)，然后设置一些属性
             mDecor = generateDecor();
             mDecor.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
             mDecor.setIsRootNamespace(true);
@@ -3674,6 +3682,7 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
             }
         }
         if (mContentParent == null) {
+            //根据窗口的风格修饰，选择对应的修饰布局文件，并且将id为content的FrameLayout赋值给mContentParent
             mContentParent = generateLayout(mDecor);
 
             // Set up decor part of UI to ignore fitsSystemWindows if appropriate.

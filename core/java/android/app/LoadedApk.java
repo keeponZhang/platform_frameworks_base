@@ -538,10 +538,11 @@ public final class LoadedApk {
 
     public Application makeApplication(boolean forceDefaultAppClass,
             Instrumentation instrumentation) {
+        //只有新创建的APP才会走if代码块之后的剩余逻辑
         if (mApplication != null) {
             return mApplication;
         }
-
+        //即将创建的Application对象
         Application app = null;
 
         String appClass = mApplicationInfo.className;
@@ -554,9 +555,14 @@ public final class LoadedApk {
             if (!mPackageName.equals("android")) {
                 initializeJavaContextClassLoader();
             }
+            //不做过多解释，创建一个Context对象
             ContextImpl appContext = ContextImpl.createAppContext(mActivityThread, this);
+            //将Context传入Instrumentation类的newApplication方法
             app = mActivityThread.mInstrumentation.newApplication(
                     cl, appClass, appContext);
+            //特别特别留意这里！！！
+            //ContextImpl中有一个Context的成员叫mOuterContext，通过这条语句就可将当前新Application对象赋值到创建的ContextImpl的成员mOuterContext
+            //（也就是让ContextImpl内部持有Application）。
             appContext.setOuterContext(app);
         } catch (Exception e) {
             if (!mActivityThread.mInstrumentation.onException(app, e)) {

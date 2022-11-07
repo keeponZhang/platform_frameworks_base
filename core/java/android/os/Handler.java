@@ -91,10 +91,12 @@ public class Handler {
      * Handle system messages here.
      */
     public void dispatchMessage(Message msg) {
+        //优先message的callback
         if (msg.callback != null) {
             handleCallback(msg);
         } else {
             if (mCallback != null) {
+                //其次handler的callback
                 if (mCallback.handleMessage(msg)) {
                     return;
                 }
@@ -111,6 +113,7 @@ public class Handler {
      * so an exception is thrown.
      */
     public Handler() {
+        //通过注释也能看到，默认构造函数没有参数，而且调运了带有两个参数的其他构造函数，第一个参数传递为null，第二个传递为false。
         this(null, false);
     }
 
@@ -194,8 +197,9 @@ public class Handler {
                     klass.getCanonicalName());
             }
         }
-
+        //然后获取了一个Looper对象mLooper
         mLooper = Looper.myLooper();
+        //如果mLooper实例为空，则会抛出一个运行时异常（Can’t create handler inside thread that has not called Looper.prepare()！）
         if (mLooper == null) {
             throw new RuntimeException(
                 "Can't create handler inside thread that has not called Looper.prepare()");
@@ -624,10 +628,12 @@ public class Handler {
     }
 
     private boolean enqueueMessage(MessageQueue queue, Message msg, long uptimeMillis) {
+        //设置message的target为this
         msg.target = this;
         if (mAsynchronous) {
             msg.setAsynchronous(true);
         }
+        //调用了MessageQueue.enqueueMessage
         return queue.enqueueMessage(msg, uptimeMillis);
     }
 
@@ -724,6 +730,7 @@ public class Handler {
 
     private static Message getPostMessage(Runnable r) {
         Message m = Message.obtain();
+        //这里会给message设置callback
         m.callback = r;
         return m;
     }
@@ -736,6 +743,7 @@ public class Handler {
     }
 
     private static void handleCallback(Message message) {
+        //特别强调这个Runnable的run方法还在当前线程中阻塞执行，没有创建新的线程（很多人以为是Runnable就创建了新线程）
         message.callback.run();
     }
 

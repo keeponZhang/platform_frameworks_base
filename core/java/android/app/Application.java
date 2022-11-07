@@ -178,6 +178,10 @@ public class Application extends ContextWrapper implements ComponentCallbacks2 {
      * @hide
      */
     /* package */ final void attach(Context context) {
+        //特别特别留意这里！！！
+        //与上面makeApplication方法中setOuterContext语句类似，不同的在于：
+        //通过ContextWrapper类的attachBaseContext方法，将makeApplication中实例化的ContextImpl对象传入到ContextWrapper类的mBase变量，
+        //这样ContextWrapper（Context子类）类的成员mBase就被实例化为Application的实现类ContextImpl
         attachBaseContext(context);
         mLoadedApk = ContextImpl.getImpl(context).mPackageInfo;
     }

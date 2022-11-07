@@ -72,6 +72,7 @@ public final class Looper {
     }
 
     private static void prepare(boolean quitAllowed) {
+        //这段代码首先判断sThreadLocal中是否已经存在Looper了，如果还没有则创建一个新的Looper设置进去。
         if (sThreadLocal.get() != null) {
             throw new RuntimeException("Only one Looper may be created per thread");
         }
@@ -87,6 +88,7 @@ public final class Looper {
     public static void prepareMainLooper() {
         prepare(false);
         synchronized (Looper.class) {
+            //sMainLooper 保存在Looper类中，UI线程通过getMainLooper方法获取UI线程的Looper对象
             if (sMainLooper != null) {
                 throw new IllegalStateException("The main Looper has already been prepared.");
             }
@@ -107,10 +109,12 @@ public final class Looper {
      * {@link #quit()} to end the loop.
      */
     public static void loop() {
+        //首先得到了当前线程的Looper对象me
         final Looper me = myLooper();
         if (me == null) {
             throw new RuntimeException("No Looper; Looper.prepare() wasn't called on this thread.");
         }
+        //拿到MessageQueue
         final MessageQueue queue = me.mQueue;
 
         // Make sure the identity of this thread is that of the local process,
@@ -119,6 +123,7 @@ public final class Looper {
         final long ident = Binder.clearCallingIdentity();
 
         for (;;) {
+            //这个next方法就是消息队列的出队方法（与上面分析的MessageQueue消息队列的enqueueMessage方法对比
             Message msg = queue.next(); // might block
             if (msg == null) {
                 // No message indicates that the message queue is quitting.
@@ -131,7 +136,7 @@ public final class Looper {
                 logging.println(">>>>> Dispatching to " + msg.target + " " +
                         msg.callback + ": " + msg.what);
             }
-
+            //当前Handler对象
             msg.target.dispatchMessage(msg);
 
             if (logging != null) {
@@ -184,6 +189,7 @@ public final class Looper {
     }
 
     private Looper(boolean quitAllowed) {
+        //创建的一个MessageQueue
         mQueue = new MessageQueue(quitAllowed);
         mThread = Thread.currentThread();
     }

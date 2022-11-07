@@ -47,6 +47,7 @@ import java.io.InputStream;
  * another Context.  Can be subclassed to modify behavior without changing
  * the original Context.
  */
+//该类的构造函数包含了一个真正的Context引用（ContextImpl对象），然后就变成了ContextImpl的装饰着模式。
 public class ContextWrapper extends Context {
     Context mBase;
 

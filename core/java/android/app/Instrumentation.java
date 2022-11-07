@@ -993,6 +993,7 @@ public class Instrumentation {
             throws InstantiationException, IllegalAccessException, 
             ClassNotFoundException {
         Application app = (Application)clazz.newInstance();
+        //继续传递context
         app.attach(context);
         return app;
     }

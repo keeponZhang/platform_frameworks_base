@@ -36,6 +36,9 @@ import java.util.Arrays;
  * The indices used to retrieve values from this structure correspond to
  * the positions of the attributes given to obtainStyledAttributes.
  */
+//TypedArray其实是用来简化我们的工作的，比如上例，如果布局中的属性的值是引用类型（比如：@dimen/dp100），
+// 如果使用AttributeSet去获得最终的像素值，那么需要第一步拿到id，第二步再去解析id。而TypedArray正是帮我们简化了这个过程。
+// https://blog.csdn.net/lmj623565791/article/details/45022631
 public class TypedArray {
 
     static TypedArray obtain(Resources res, int len) {

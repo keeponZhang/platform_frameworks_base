@@ -434,6 +434,7 @@ public abstract class Context {
      */
     public final TypedArray obtainStyledAttributes(
             int[] attrs) {
+        //获取当前Theme对应的TypedArray对象
         return getTheme().obtainStyledAttributes(attrs);
     }
 

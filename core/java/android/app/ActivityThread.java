@@ -2249,13 +2249,15 @@ public final class ActivityThread {
                     + ", pkg=" + r.packageInfo.getPackageName()
                     + ", comp=" + r.intent.getComponent().toShortString()
                     + ", dir=" + r.packageInfo.getAppDir());
-
+            //已经创建好新的activity实例
             if (activity != null) {
+                //创建一个Context对象
                 Context appContext = createBaseContextForActivity(r, activity);
                 CharSequence title = r.activityInfo.loadLabel(appContext.getPackageManager());
                 Configuration config = new Configuration(mCompatConfiguration);
                 if (DEBUG_CONFIGURATION) Slog.v(TAG, "Launching activity "
                         + r.activityInfo.name + " with config " + config);
+                //将上面创建的appContext传入到activity的attach方法
                 activity.attach(appContext, this, getInstrumentation(), r.token,
                         r.ident, app, r.intent, r.activityInfo, title, r.parent,
                         r.embeddedID, r.lastNonConfigurationInstances, config,
@@ -2268,6 +2270,7 @@ public final class ActivityThread {
                 activity.mStartedActivity = false;
                 int theme = r.activityInfo.getThemeResource();
                 if (theme != 0) {
+                    //设置了主题
                     activity.setTheme(theme);
                 }
 
@@ -2333,8 +2336,13 @@ public final class ActivityThread {
 
     private Context createBaseContextForActivity(ActivityClientRecord r,
             final Activity activity) {
+        //实质就是new一个ContextImpl对象，调运ContextImpl的有参构造初始化一些参数
         ContextImpl appContext = ContextImpl.createActivityContext(this, r.packageInfo, r.token);
+        //特别特别留意这里！！！
+        //ContextImpl中有一个Context的成员叫mOuterContext，通过这条语句就可将当前新Activity对象赋值到创建的ContextImpl的成员mOuterContext
+        // （也就是让ContextImpl内部持有Activity）。
         appContext.setOuterContext(activity);
+        //创建返回值并且赋值
         Context baseContext = appContext;
 
         final DisplayManagerGlobal dm = DisplayManagerGlobal.getInstance();
@@ -2361,6 +2369,7 @@ public final class ActivityThread {
                 }
             }
         }
+        //返回ContextImpl对象
         return baseContext;
     }
 
@@ -2737,6 +2746,7 @@ public final class ActivityThread {
 
         LoadedApk packageInfo = getPackageInfoNoCheck(
                 data.info.applicationInfo, data.compatInfo);
+        //类似上面Activity的创建，这里创建service对象实例
         Service service = null;
         try {
             java.lang.ClassLoader cl = packageInfo.getClassLoader();
@@ -2751,11 +2761,14 @@ public final class ActivityThread {
 
         try {
             if (localLOGV) Slog.v(TAG, "Creating service " + data.info.name);
-
+            //不做过多解释，创建一个Context对象
             ContextImpl context = ContextImpl.createAppContext(this, packageInfo);
+            //特别特别留意这里！！！
+            //ContextImpl中有一个Context的成员叫mOuterContext，通过这条语句就可将当前新Service对象赋值到创建的ContextImpl的成员mOuterContext（也就是让ContextImpl内部持有Service）。
             context.setOuterContext(service);
 
             Application app = packageInfo.makeApplication(false, mInstrumentation);
+            //将上面创建的context传入到service的attach方法
             service.attach(context, this, data.info.name, data.token, app,
                     ActivityManagerNative.getDefault());
             service.onCreate();
@@ -3093,6 +3106,7 @@ public final class ActivityThread {
                 r.activity.mVisibleFromServer = true;
                 mNumVisibleActivities++;
                 if (r.activity.mVisibleFromClient) {
+                    //makeVisible方法显示我们上面通过setContentView创建的mDecor视图族
                     r.activity.makeVisible();
                 }
             }
@@ -5236,7 +5250,7 @@ public final class ActivityThread {
         TrustedCertificateStore.setDefaultUserDirectory(configDir);
 
         Process.setArgV0("<pre-initialized>");
-
+        //这里初始化了looper
         Looper.prepareMainLooper();
 
         ActivityThread thread = new ActivityThread();

@@ -21,12 +21,16 @@ package android.os;
  * used to create handler classes. Note that start() must still be called.
  */
 public class HandlerThread extends Thread {
+    //线程的优先级
     int mPriority;
+    //线程的id
     int mTid = -1;
+    //一个与Handler关联的Looper对象
     Looper mLooper;
 
     public HandlerThread(String name) {
         super(name);
+        //设置优先级为默认线程
         mPriority = Process.THREAD_PRIORITY_DEFAULT;
     }
     
@@ -45,20 +49,29 @@ public class HandlerThread extends Thread {
      * Call back method that can be explicitly overridden if needed to execute some
      * setup before Looper loops.
      */
+    //可重写方法，Looper.loop之前在线程中需要处理的其他逻辑在这里实现
     protected void onLooperPrepared() {
     }
-
+    //HandlerThread线程的run方法
     @Override
     public void run() {
+        //获取当前线程的id
         mTid = Process.myTid();
+        //创建Looper对象
+        //这就是为什么我们要在调用线程的start()方法后才能得到Looper(Looper.myLooper不为Null)
         Looper.prepare();
+        //同步代码块，当获得mLooper对象后，唤醒所有线程
         synchronized (this) {
             mLooper = Looper.myLooper();
             notifyAll();
         }
+        //设置线程优先级
         Process.setThreadPriority(mPriority);
+        //Looper.loop之前在线程中需要处理的其他逻辑
         onLooperPrepared();
+        //建立了消息循环
         Looper.loop();
+        //一般执行不到这句，除非quit消息队列
         mTid = -1;
     }
     
@@ -69,11 +82,14 @@ public class HandlerThread extends Thread {
      * @return The looper.
      */
     public Looper getLooper() {
+        //线程死了
         if (!isAlive()) {
             return null;
         }
         
         // If the thread has been started, wait until the looper has been created.
+        //同步代码块，正好和上面run方法中同步块对应
+        //只要线程活着并且mLooper为null，则一直等待
         synchronized (this) {
             while (isAlive() && mLooper == null) {
                 try {
@@ -107,6 +123,7 @@ public class HandlerThread extends Thread {
     public boolean quit() {
         Looper looper = getLooper();
         if (looper != null) {
+            //退出消息循环
             looper.quit();
             return true;
         }
@@ -134,6 +151,7 @@ public class HandlerThread extends Thread {
     public boolean quitSafely() {
         Looper looper = getLooper();
         if (looper != null) {
+            //退出消息循环
             looper.quitSafely();
             return true;
         }
@@ -144,6 +162,7 @@ public class HandlerThread extends Thread {
      * Returns the identifier of this thread. See Process.myTid().
      */
     public int getThreadId() {
+        //返回线程id
         return mTid;
     }
 }

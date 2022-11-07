@@ -873,6 +873,7 @@ public final class ViewRootImpl implements ViewParent,
         if (!mHandlingLayoutInLayoutRequest) {
             checkThread();
             mLayoutRequested = true;
+            //View调运requestLayout最终层层上传到ViewRootImpl后最终触发了该方法
             scheduleTraversals();
         }
     }
@@ -903,7 +904,10 @@ public final class ViewRootImpl implements ViewParent,
     public void invalidateChild(View child, Rect dirty) {
         invalidateChildInParent(null, dirty);
     }
-
+    //看见没有？这个ViewRootImpl类的invalidateChildInParent方法直接返回了null，也就是上面ViewGroup中说的，层层上级传递到ViewRootImpl的invalidateChildInParent方法结束了那个do while循环。
+    //看见这里调运的scheduleTraversals这个方法吗？scheduleTraversals会通过Handler的Runnable发送一个异步消息，调运doTraversal方法，然后最终调用performTraversals()执行重绘。
+    //开头背景知识介绍说过的，performTraversals就是整个View数开始绘制的起始调运地方，所以说View调运invalidate方法的实质是层层上传到父级，
+    //直到传递到ViewRootImpl后触发了scheduleTraversals方法，然后整个View树开始重新按照上面分析的View绘制流程进行重绘任务。
     @Override
     public ViewParent invalidateChildInParent(int[] location, Rect dirty) {
         checkThread();
@@ -946,10 +950,11 @@ public final class ViewRootImpl implements ViewParent,
         if (!intersected) {
             localDirty.setEmpty();
         }
+        //View调运invalidate最终层层上传到ViewRootImpl后最终触发了该方法
         if (!mWillDrawSoon && (intersected || mIsAnimating)) {
             scheduleTraversals();
         }
-
+        //这里直接返回了null
         return null;
     }
 
@@ -1213,7 +1218,7 @@ public final class ViewRootImpl implements ViewParent,
                 mDispatchContentInsets, null /* windowDecorInsets */,
                 mDispatchStableInsets, isRound));
     }
-
+    //该函数做的执行过程主要是根据之前设置的状态，判断是否重新计算视图大小(measure)、是否重新放置视图的位置(layout)、以及是否重绘 (draw)，
     private void performTraversals() {
         // cache mView since it is used so much below...
         final View host = mView;
@@ -1768,6 +1773,8 @@ public final class ViewRootImpl implements ViewParent,
                         (relayoutResult&WindowManagerGlobal.RELAYOUT_RES_IN_TOUCH_MODE) != 0);
                 if (focusChangedDueToTouchMode || mWidth != host.getMeasuredWidth()
                         || mHeight != host.getMeasuredHeight() || contentInsetsChanged) {
+                    //最外层的根视图的widthMeasureSpec和heightMeasureSpec由来
+                    //lp.width和lp.height在创建ViewGroup实例时等于MATCH_PARENT
                     int childWidthMeasureSpec = getRootMeasureSpec(mWidth, lp.width);
                     int childHeightMeasureSpec = getRootMeasureSpec(mHeight, lp.height);
 
@@ -2232,10 +2239,12 @@ public final class ViewRootImpl implements ViewParent,
      *
      * @return The measure spec to use to measure the root view.
      */
+    //上面传入参数后这个函数走的是MATCH_PARENT，使用MeasureSpec.makeMeasureSpec方法组装一个MeasureSpec，MeasureSpec的specMode等于EXACTLY，
+    //specSize等于windowSize，也就是为何根视图总是全屏的原因。
     private static int getRootMeasureSpec(int windowSize, int rootDimension) {
         int measureSpec;
         switch (rootDimension) {
-
+        //走的是这里
         case ViewGroup.LayoutParams.MATCH_PARENT:
             // Window can't resize. Force root view to be windowSize.
             measureSpec = MeasureSpec.makeMeasureSpec(windowSize, MeasureSpec.EXACTLY);
@@ -6018,7 +6027,7 @@ public final class ViewRootImpl implements ViewParent,
     }
     final InvalidateOnAnimationRunnable mInvalidateOnAnimationRunnable =
             new InvalidateOnAnimationRunnable();
-
+    //通过ViewRootImpl类的Handler发送了一条MSG_INVALIDATE消息
     public void dispatchInvalidateDelayed(View view, long delayMilliseconds) {
         Message msg = mHandler.obtainMessage(MSG_INVALIDATE, view);
         mHandler.sendMessageDelayed(msg, delayMilliseconds);

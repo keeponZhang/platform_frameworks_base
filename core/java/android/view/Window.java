@@ -175,7 +175,7 @@ public abstract class Window {
     private static final String PROPERTY_HARDWARE_UI = "persist.sys.ui.hw";
 
     private final Context mContext;
-
+    //每次自定义属性,  TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.test);
     private TypedArray mWindowStyle;
     private Callback mCallback;
     private OnWindowDismissedCallback mOnWindowDismissedCallback;
@@ -920,6 +920,8 @@ public abstract class Window {
 
     /** @hide */
     public boolean shouldCloseOnTouch(Context context, MotionEvent event) {
+        //这其实就是一个判断，判断mCloseOnTouchOutside标记及是否为ACTION_DOWN事件，同时判断event的x、y坐标是不是超出Bounds，
+        //然后检查FrameLayout的content的id的DecorView是否为空。其实没啥太重要的，这只是对于处理window边界之外的Touch事件有判断价值而已
         if (mCloseOnTouchOutside && event.getAction() == MotionEvent.ACTION_DOWN
                 && isOutOfBounds(context, event) && peekDecorView() != null) {
             return true;

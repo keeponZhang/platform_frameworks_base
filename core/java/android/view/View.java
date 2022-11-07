@@ -9940,6 +9940,8 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * (but after its own view has been drawn).
      * @param canvas the canvas on which to draw the view
      */
+    //View的dispatchDraw()方法是一个空方法，而且注释说明了如果View包含子类需要重写他，所以我们有必要看下ViewGroup的dispatchDraw方法源码
+    //（这也就是刚刚说的对当前View的所有子View进行绘制，如果当前的View没有子View就不需要进行绘制的原因，因为如果是View调运该方法是空的，而ViewGroup才有实现）
     protected void dispatchDraw(Canvas canvas) {
 
     }
@@ -11738,9 +11740,11 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @param r the right position of the dirty region
      * @param b the bottom position of the dirty region
      */
+    //看见上面注释没有？public，只能在UI Thread中使用，别的Thread用postInvalidate方法，View是可见的才有效，回调onDraw方法，针对局部View
     public void invalidate(int l, int t, int r, int b) {
         final int scrollX = mScrollX;
         final int scrollY = mScrollY;
+        //实质还是调运invalidateInternal方法
         invalidateInternal(l - scrollX, t - scrollY, r - scrollX, b - scrollY, true, false);
     }
 
@@ -11752,6 +11756,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * This must be called from a UI thread. To call from a non-UI thread, call
      * {@link #postInvalidate()}.
      */
+    //看见上面注释没有？public，只能在UI Thread中使用，别的Thread用postInvalidate方法，View是可见的才有效，回调onDraw方法,针对局部View
     public void invalidate() {
         invalidate(true);
     }
@@ -11769,9 +11774,10 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      *            dimensions have not changed.
      */
     void invalidate(boolean invalidateCache) {
+        //实质还是调运invalidateInternal方法
         invalidateInternal(0, 0, mRight - mLeft, mBottom - mTop, invalidateCache, true);
     }
-
+    //！！！！！！看见没有，这是所有invalidate的终极调运方法！！！！！！
     void invalidateInternal(int l, int t, int r, int b, boolean invalidateCache,
             boolean fullInvalidate) {
         if (mGhostView != null) {
@@ -11804,7 +11810,9 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
             final ViewParent p = mParent;
             if (p != null && ai != null && l < r && t < b) {
                 final Rect damage = ai.mTmpInvalRect;
+                //设置刷新区域
                 damage.set(l, t, r, b);
+                //传递调运Parent ViewGroup的invalidateChild方法
                 p.invalidateChild(this, damage);
             }
 
@@ -12227,6 +12235,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         // We try only with the AttachInfo because there's no point in invalidating
         // if we are not attached to our window
         final AttachInfo attachInfo = mAttachInfo;
+        //核心，实质就是调运了ViewRootImpl.dispatchInvalidateDelayed方法
         if (attachInfo != null) {
             attachInfo.mViewRootImpl.dispatchInvalidateDelayed(this, delayMilliseconds);
         }
@@ -12857,6 +12866,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      *
      * @see #awakenScrollBars(int)
      */
+    //对View的滚动条进行绘制
     protected final void onDrawScrollBars(Canvas canvas) {
         // scrollbars are drawn only when the animation is running
         final ScrollabilityCache cache = mScrollCache;
@@ -15402,11 +15412,12 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @param canvas Canvas on which to draw the background
      */
     private void drawBackground(Canvas canvas) {
+        //获取xml中通过android:background属性或者代码中setBackgroundColor()、setBackgroundResource()等方法进行赋值的背景Drawable
         final Drawable background = mBackground;
         if (background == null) {
             return;
         }
-
+        //根据layout过程确定的View位置来设置背景的绘制区域
         if (mBackgroundSizeChanged) {
             background.setBounds(0, 0,  mRight - mLeft, mBottom - mTop);
             mBackgroundSizeChanged = false;
@@ -15429,6 +15440,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         final int scrollX = mScrollX;
         final int scrollY = mScrollY;
         if ((scrollX | scrollY) == 0) {
+            //调用Drawable的draw()方法来完成背景的绘制工作
             background.draw(canvas);
         } else {
             canvas.translate(scrollX, scrollY);
@@ -15670,11 +15682,13 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         int oldT = mTop;
         int oldB = mBottom;
         int oldR = mRight;
-
+        //实质都是调用setFrame方法把参数分别赋值给mLeft、mTop、mRight和mBottom这几个变量
+        //判断View的位置是否发生过变化，以确定有没有必要对当前的View进行重新layout
         boolean changed = isLayoutModeOptical(mParent) ?
                 setOpticalFrame(l, t, r, b) : setFrame(l, t, r, b);
-
+        //需要重新layout
         if (changed || (mPrivateFlags & PFLAG_LAYOUT_REQUIRED) == PFLAG_LAYOUT_REQUIRED) {
+            //回调onLayout
             onLayout(changed, l, t, r, b);
             mPrivateFlags &= ~PFLAG_LAYOUT_REQUIRED;
 
@@ -17478,7 +17492,8 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
         mPrivateFlags |= PFLAG_FORCE_LAYOUT;
         mPrivateFlags |= PFLAG_INVALIDATED;
-
+        //由此向ViewParent请求布局
+        //从这个View开始向上一直requestLayout，最终到达ViewRootImpl的requestLayout
         if (mParent != null && !mParent.isLayoutRequested()) {
             mParent.requestLayout();
         }
@@ -17519,6 +17534,15 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      *
      * @see #onMeasure(int, int)
      */
+    //为整个View树计算实际的大小，然后设置实际的高和宽，每个View控件的实际宽高都是由父视图和自身决定的。实际的测量是在onMeasure方法进行，
+    //所以在View的子类需要重写onMeasure方法，这是因为measure方法是final的，不允许重载，所以View子类只能通过重载onMeasure来实现自己的测量逻辑。
+
+    //这个方法的两个参数都是父View传递过来的，也就是代表了父view的规格。他由两部分组成，高2位表示MODE，定义在MeasureSpec类（View的内部类）中，
+    //有三种类型，MeasureSpec.EXACTLY表示确定大小， MeasureSpec.AT_MOST表示最大大小， MeasureSpec.UNSPECIFIED不确定。低30位表示size，也就是父View的大小。
+    //对于系统Window类的DecorVIew对象Mode一般都为MeasureSpec.EXACTLY ，而size分别对应屏幕宽高。对于子View来说大小是由父View和子View共同决定的。
+
+
+    //final方法，子类不可重写
     public final void measure(int widthMeasureSpec, int heightMeasureSpec) {
         boolean optical = isLayoutModeOptical(this);
         if (optical != isLayoutModeOptical(mParent)) {
@@ -17551,6 +17575,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
             int cacheIndex = forceLayout ? -1 : mMeasureCache.indexOfKey(key);
             if (cacheIndex < 0 || sIgnoreMeasureCache) {
                 // measure ourselves, this should set the measured dimension flag back
+                //回调onMeasure()方法
                 onMeasure(widthMeasureSpec, heightMeasureSpec);
                 mPrivateFlags3 &= ~PFLAG3_MEASURE_NEEDED_BEFORE_LAYOUT;
             } else {
@@ -17624,7 +17649,14 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @see android.view.View.MeasureSpec#getMode(int)
      * @see android.view.View.MeasureSpec#getSize(int)
      */
+    //View的onMeasure默认实现方法
+    //对于非ViewGroup的View而言，通过调用上面默认的onMeasure即可完成View的测量，当然你也可以重载onMeasure并调用setMeasuredDimension来设置任意大小的布局，
+    //但一般不这么做，因为这种做法不太好，至于为何不好，后面分析完你就明白了。
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        //我们可以看见onMeasure默认的实现仅仅调用了setMeasuredDimension，setMeasuredDimension函数是一个很关键的函数，
+        //它对View的成员变量mMeasuredWidth和mMeasuredHeight变量赋值，measure的主要目的就是对View树中的每个View的mMeasuredWidth和mMeasuredHeight进行赋值，
+        //所以一旦这两个变量被赋值意味着该View的测量工作结束。既然这样那我们就看看设置的默认尺寸大小吧，可以看见setMeasuredDimension传入的参数都是通过getDefaultSize返回的，
+        //所以再来看下getDefaultSize方法源码
         setMeasuredDimension(getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec),
                 getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec));
     }
@@ -17737,6 +17769,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @param measureSpec Constraints imposed by the parent
      * @return The size this view should be.
      */
+    //如果specMode等于AT_MOST或EXACTLY就返回specSize，这就是系统默认的规格
     public static int getDefaultSize(int size, int measureSpec) {
         int result = size;
         int specMode = MeasureSpec.getMode(measureSpec);
@@ -17781,6 +17814,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      *
      * @return The suggested minimum width of the view.
      */
+    //建议的最小宽度和高度都是由View的Background尺寸与通过设置View的miniXXX属性共同决定的
     protected int getSuggestedMinimumWidth() {
         return (mBackground == null) ? mMinWidth : max(mMinWidth, mBackground.getMinimumWidth());
     }
@@ -19729,6 +19763,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
          * Measure specification mode: The parent has not imposed any constraint
          * on the child. It can be whatever size it wants.
          */
+        //未指定模式，父View完全依据子View的设计值来决定；
         public static final int UNSPECIFIED = 0 << MODE_SHIFT;
 
         /**
@@ -19736,12 +19771,14 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
          * for the child. The child is going to be given those bounds regardless
          * of how big it wants to be.
          */
+        //确定模式，父View希望子View的大小是确定的，由specSize决定；
         public static final int EXACTLY     = 1 << MODE_SHIFT;
 
         /**
          * Measure specification mode: The child can be as large as it wants up
          * to the specified size.
          */
+        //最多模式，父View希望子View的大小最多是specSize指定的值；
         public static final int AT_MOST     = 2 << MODE_SHIFT;
 
         /**

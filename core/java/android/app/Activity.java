@@ -2509,6 +2509,7 @@ public class Activity extends ContextThemeWrapper
      * The default implementation always returns false.
      */
     public boolean onTouchEvent(MotionEvent event) {
+        //mWindow.shouldCloseOnTouch(this, event)中的mWindow实际就是上面分析dispatchTouchEvent方法里的getWindow()对象
         if (mWindow.shouldCloseOnTouch(this, event)) {
             finish();
             return true;
@@ -2597,7 +2598,7 @@ public class Activity extends ContextThemeWrapper
             }
         }
     }
-
+    //onContentChanged是个空方法。那就说明当Activity的布局改动时，即setContentView()或者addContentView()方法执行完毕时就会调用该方法
     public void onContentChanged() {
     }
 
@@ -2736,6 +2737,7 @@ public class Activity extends ContextThemeWrapper
      * @return boolean Return true if this event was consumed.
      */
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        //调用了onUserInteraction方法
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
             onUserInteraction();
         }
@@ -5936,11 +5938,16 @@ public class Activity extends ContextThemeWrapper
             CharSequence title, Activity parent, String id,
             NonConfigurationInstances lastNonConfigurationInstances,
             Configuration config, String referrer, IVoiceInteractor voiceInteractor) {
+        //这个context是ContextImpl
+        //(Activity通过ContextWrapper的成员mBase来引用了一个ContextImpl对象，这样，Activity组件以后就可以通过这个ContextImpl对象来执行一些具体的操作
+        //（启动Service等）；同时ContextImpl类又通过自己的成员mOuterContext引用了与它关联的Activity，这样ContextImpl类也可以操作Activity。
+        //由此说明一个Activity就有一个Context，而且生命周期和Activity类相同（记住这句话，写应用就可以避免一些低级的内存泄漏问题）
         attachBaseContext(context);
 
         mFragments.attachActivity(this, mContainer, null);
         //创建Window类型的mWindow对象，实际为PhoneWindow类实现了抽象Window类
         mWindow = PolicyManager.makeNewWindow(this);
+        //这里设置callBack
         mWindow.setCallback(this);
         mWindow.setOnWindowDismissedCallback(this);
         mWindow.getLayoutInflater().setPrivateFactory(this);

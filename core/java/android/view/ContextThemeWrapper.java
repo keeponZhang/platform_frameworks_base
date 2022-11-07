@@ -25,6 +25,7 @@ import android.content.res.Resources;
  * A ContextWrapper that allows you to modify the theme from what is in the 
  * wrapped context. 
  */
+//该类内部包含了主题Theme相关的接口，即android:theme属性指定的。
 public class ContextThemeWrapper extends ContextWrapper {
     private int mThemeResource;
     private Resources.Theme mTheme;
@@ -81,7 +82,9 @@ public class ContextThemeWrapper extends ContextWrapper {
     }
     
     @Override public void setTheme(int resid) {
+        //通过外部设置以后mTheme和mThemeResource就不为null了
         mThemeResource = resid;
+        //初始化选择的主题，mTheme就不为null了
         initializeTheme();
     }
     
@@ -92,12 +95,14 @@ public class ContextThemeWrapper extends ContextWrapper {
     }
 
     @Override public Resources.Theme getTheme() {
+        //一旦设置有Theme则不再走后面逻辑，直接返回以前设置的Theme
         if (mTheme != null) {
             return mTheme;
         }
-
+        //没有设置Theme则获取默认的selectDefaultTheme
         mThemeResource = Resources.selectDefaultTheme(mThemeResource,
                 getApplicationInfo().targetSdkVersion);
+        //初始化选择的主题，mTheme就不为null了
         initializeTheme();
 
         return mTheme;
@@ -129,6 +134,7 @@ public class ContextThemeWrapper extends ContextWrapper {
     }
 
     private void initializeTheme() {
+        //这就解释了为何setTheme必须在setContentView前调运，不多解释了，很明白了吧！！！！！！！！
         final boolean first = mTheme == null;
         if (first) {
             mTheme = getResources().newTheme();

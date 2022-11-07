@@ -206,6 +206,7 @@ class ReceiverRestrictedContext extends ContextWrapper {
  * Common implementation of Context API, which provides the base
  * context object for Activity and other application components.
  */
+//该类实现了Context类的所有功能。
 class ContextImpl extends Context {
     private final static String TAG = "ContextImpl";
     private final static boolean DEBUG = false;
@@ -820,7 +821,7 @@ class ContextImpl extends Context {
     public Looper getMainLooper() {
         return mMainThread.getLooper();
     }
-
+    //可以看到getApplicationContext方法是Context的方法，而且返回值是Context类型，返回对象和上面通过Service或者Activity的getApplication返回的是一个对象
     @Override
     public Context getApplicationContext() {
         return (mPackageInfo != null) ?
@@ -2271,6 +2272,7 @@ class ContextImpl extends Context {
         mUser = user;
 
         mPackageInfo = packageInfo;
+        //单例模式获取ResourcesManager对象
         mResourcesManager = ResourcesManager.getInstance();
         mDisplay = display;
         mOverrideConfiguration = overrideConfiguration;
@@ -2285,7 +2287,7 @@ class ContextImpl extends Context {
         }
         mDisplayAdjustments.setCompatibilityInfo(compatInfo);
         mDisplayAdjustments.setActivityToken(activityToken);
-
+        //packageInfo对于一个APP来说只有一个，所以resources 是同一份
         Resources resources = packageInfo.getResources(mainThread);
         if (resources != null) {
             if (activityToken != null
@@ -2293,12 +2295,15 @@ class ContextImpl extends Context {
                     || overrideConfiguration != null
                     || (compatInfo != null && compatInfo.applicationScale
                             != resources.getCompatibilityInfo().applicationScale)) {
+                //mResourcesManager是单例，所以resources是同一份
                 resources = mResourcesManager.getTopLevelResources(packageInfo.getResDir(),
                         packageInfo.getSplitResDirs(), packageInfo.getOverlayDirs(),
                         packageInfo.getApplicationInfo().sharedLibraryFiles, displayId,
                         overrideConfiguration, compatInfo, activityToken);
             }
         }
+        //把resources赋值给mResources
+        //由此可以看出在设备其他因素不变的情况下我们通过不同的Context实例得到的Resources是同一套资源。
         mResources = resources;
 
         if (container != null) {
