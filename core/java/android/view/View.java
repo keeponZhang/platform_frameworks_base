@@ -8466,6 +8466,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
             //noinspection SimplifiableIfStatement
             ListenerInfo li = mListenerInfo;
             //优先onTouch
+            //eanble为true才能,mOnTouchListener.才会起作用
             if (li != null && li.mOnTouchListener != null
                     && (mViewFlags & ENABLED_MASK) == ENABLED
                     && li.mOnTouchListener.onTouch(this, event)) {
@@ -9430,7 +9431,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
                 return true;
             }
         }
-
+        //走到这里控件是enable的
         if (((viewFlags & CLICKABLE) == CLICKABLE ||
                 (viewFlags & LONG_CLICKABLE) == LONG_CLICKABLE)) {
             switch (event.getAction()) {
@@ -9466,6 +9467,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
                                 if (mPerformClick == null) {
                                     mPerformClick = new PerformClick();
                                 }
+                                //先通过post，post失败的话直接调用performClick
                                 if (!post(mPerformClick)) {
                                     performClick();
                                 }

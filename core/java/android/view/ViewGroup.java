@@ -1955,10 +1955,11 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
 
             // Check for interception.
             final boolean intercepted;
+            //如果有子控件消费时间，父容器的onInterceptTouchEvent还会再次调用；否则只在ACTION_DOWN的时候调用
             if (actionMasked == MotionEvent.ACTION_DOWN
                     || mFirstTouchTarget != null) {
                 final boolean disallowIntercept = (mGroupFlags & FLAG_DISALLOW_INTERCEPT) != 0;
-                //disallowIntercept默认为false，允许拦截
+                //disallowIntercept默认为false，允许拦截,会执行onInterceptTouchEvent方法
                 if (!disallowIntercept) {
                     intercepted = onInterceptTouchEvent(ev);
                     ev.setAction(action); // restore action in case it was changed
@@ -2077,7 +2078,8 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
                                 }
                                 mLastTouchDownX = ev.getX();
                                 mLastTouchDownY = ev.getY();
-                                //满足if语句后重要的操作有：1给newTouchTarget赋值；2给alreadyDispatchedToNewTouchTarget赋值为true；3执行break，因为该for循环遍历子View判断哪个子View接受Touch事件，既然已经找到了就跳出该外层for循环；
+                                //满足if语句后重要的操作有：1给newTouchTarget赋值；2给alreadyDispatchedToNewTouchTarget赋值为true；3执行break，
+                                // 因为该for循环遍历子View判断哪个子View接受Touch事件，既然已经找到了就跳出该外层for循环；
                                 newTouchTarget = addTouchTarget(child, idBitsToAssign);
                                 alreadyDispatchedToNewTouchTarget = true;
                                 break;
@@ -2101,7 +2103,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
                     }
                 }
             }
-
+            //子控件没能处理这个事件或者当前控件拦截了这个时间
             // Dispatch to touch targets.
             if (mFirstTouchTarget == null) {
                 // No touch targets so treat this as an ordinary view.
@@ -2395,6 +2397,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
                //（也就是View的这个方法，因为ViewGroup的父类是View）；当child != null时会调用该子view(当然该view可能是一个View也可能是一个ViewGroup)的dispatchTouchEvent(event)处理
                 handled = super.dispatchTouchEvent(event);
             } else {
+                //把事件传给child的dispatchTouchEvent方法
                 handled = child.dispatchTouchEvent(event);
             }
             event.setAction(oldAction);
@@ -2438,6 +2441,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
 
         // Perform any necessary transformations and dispatch.
         if (child == null) {
+            // 当child == null时会将Touch事件传递给该ViewGroup自身的dispatchTouchEvent()处理，即super.dispatchTouchEvent(event)
             handled = super.dispatchTouchEvent(transformedEvent);
         } else {
             final float offsetX = mScrollX - child.mLeft;
@@ -2446,7 +2450,7 @@ public abstract class ViewGroup extends View implements ViewParent, ViewManager 
             if (! child.hasIdentityMatrix()) {
                 transformedEvent.transform(child.getInverseMatrix());
             }
-
+            //把事件传给child的dispatchTouchEvent方法
             handled = child.dispatchTouchEvent(transformedEvent);
         }
 
