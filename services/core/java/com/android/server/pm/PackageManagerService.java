@@ -1486,11 +1486,13 @@ public class PackageManagerService extends IPackageManager.Stub {
 
             // Gross hack for now: we know this file doesn't contain any
             // code, so don't dexopt it to avoid the resulting log spew.
+            // 加 载 Framework资源
             alreadyDexOpted.add(frameworkDir.getPath() + "/framework-res.apk");
 
             // Gross hack for now: we know this file is only part of
             // the boot class path for art, so don't dexopt it to
             // avoid the resulting log spew.
+            //加载核心库
             alreadyDexOpted.add(frameworkDir.getPath() + "/core-libart.jar");
 
             /**
@@ -1554,7 +1556,9 @@ public class PackageManagerService extends IPackageManager.Stub {
                     | PackageParser.PARSE_IS_PRIVILEGED, scanFlags, 0);
 
             // Collect ordinary system packages.
+            //获取系统 App 的安装路径
             final File systemAppDir = new File(Environment.getRootDirectory(), "app");
+            //扫描系统App安装路径
             scanDirLI(systemAppDir, PackageParser.PARSE_IS_SYSTEM
                     | PackageParser.PARSE_IS_SYSTEM_DIR, scanFlags, 0);
 
