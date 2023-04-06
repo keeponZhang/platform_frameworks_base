@@ -3443,6 +3443,7 @@ public class PackageManagerService extends IPackageManager.Stub {
     }
 
     private void scanDirLI(File dir, int flags, int scanMode, long currentTime) {
+        //1. 获取该目录下的所有文件
         String[] files = dir.list();
         if (files == null) {
             Log.d(TAG, "No files in app dir " + dir);
@@ -3455,12 +3456,14 @@ public class PackageManagerService extends IPackageManager.Stub {
         }
 
         int i;
+        //2.解析目录下的所有apk文件
         for (i=0; i<files.length; i++) {
             File file = new File(dir, files[i]);
             if (!isPackageFilename(files[i])) {
                 // Ignore entries which are not apk's
                 continue;
             }
+            //3、解析apk文件
             PackageParser.Package pkg = scanPackageLI(file,
                     flags|PackageParser.PARSE_MUST_BE_APK, scanMode, currentTime, null);
             // Don't mess around with apps in system partition.
@@ -3535,9 +3538,11 @@ public class PackageManagerService extends IPackageManager.Stub {
         String scanPath = scanFile.getPath();
         if (DEBUG_INSTALL) Slog.d(TAG, "Parsing: " + scanPath);
         parseFlags |= mDefParseFlags;
+        //1. 创建一个包解析器
         PackageParser pp = new PackageParser(scanPath);
         pp.setSeparateProcesses(mSeparateProcesses);
         pp.setOnlyCoreApps(mOnlyCore);
+        //2.解析apk包
         final PackageParser.Package pkg = pp.parsePackage(scanFile,
                 scanPath, mMetrics, parseFlags);
 
@@ -3706,6 +3711,7 @@ public class PackageManagerService extends IPackageManager.Stub {
         // Set application objects path explicitly.
         setApplicationInfoPaths(pkg, codePath, resPath);
         // Note that we invoke the following method only if we are about to unpack an application
+        //3•解析 apk 包中 Activity、 Service 等组件
         PackageParser.Package scannedPkg = scanPackageLI(pkg, parseFlags, scanMode
                 | SCAN_UPDATE_SIGNATURE, currentTime, user);
 

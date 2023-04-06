@@ -515,12 +515,15 @@ public class PackageParser {
         Resources res = null;
         boolean assetError = true;
         try {
+            //1.构建AssetManager
             assmgr = new AssetManager();
             int cookie = assmgr.addAssetPath(mArchiveSourcePath);
             if (cookie != 0) {
+                //2. 构建资源
                 res = new Resources(assmgr, metrics, null);
                 assmgr.setConfiguration(0, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         Build.VERSION.RESOURCES_SDK_INT);
+                //3•获取 AndroidManifext •xml 的解析器
                 parser = assmgr.openXmlResourceParser(cookie, ANDROID_MANIFEST_FILENAME);
                 assetError = false;
             } else {
@@ -540,6 +543,7 @@ public class PackageParser {
         Exception errorException = null;
         try {
             // XXXX todo: need to figure out correct configuration.
+            //4.解析获取至[1的AndroidManifext•xml
             pkg = parsePackage(res, parser, flags, errorText);
         } catch (Exception e) {
             errorException = e;
@@ -953,7 +957,8 @@ public class PackageParser {
         mParseActivityArgs = null;
         mParseServiceArgs = null;
         mParseProviderArgs = null;
-        
+
+        //1. 解析到 AndroidManifext 的包 名
         String pkgName = parsePackageName(parser, attrs, flags, outError);
         if (pkgName == null) {
             mParseError = PackageManager.INSTALL_PARSE_FAILED_BAD_PACKAGE_NAME;
@@ -968,7 +973,7 @@ public class PackageParser {
                 return null;
             }
         }
-
+        //2•构建Package对象
         final Package pkg = new Package(pkgName);
         boolean foundApp = false;
         
@@ -1019,7 +1024,7 @@ public class PackageParser {
         int supportsXLargeScreens = 1;
         int resizeable = 1;
         int anyDensity = 1;
-        
+        //3. 解析 Andr〇idManifest •xml 中的元素
         int outerDepth = parser.getDepth();
         while ((type = parser.next()) != XmlPullParser.END_DOCUMENT
                 && (type != XmlPullParser.END_TAG || parser.getDepth() > outerDepth)) {
@@ -1042,6 +1047,7 @@ public class PackageParser {
                 }
 
                 foundApp = true;
+                //4e解析Application标签，我们的Activity，Service等都在这个标签内
                 if (!parseApplication(pkg, res, parser, attrs, flags, outError)) {
                     return null;
                 }
@@ -1858,6 +1864,7 @@ public class PackageParser {
     private boolean parseApplication(Package owner, Resources res,
             XmlPullParser parser, AttributeSet attrs, int flags, String[] outError)
         throws XmlPullParserException, IOException {
+        //应周信息
         final ApplicationInfo ai = owner.applicationInfo;
         final String pkgName = owner.applicationInfo.packageName;
 

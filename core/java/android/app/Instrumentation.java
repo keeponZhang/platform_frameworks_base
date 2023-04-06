@@ -111,6 +111,7 @@ public class Instrumentation {
      *                  instrumentation was started.
      */
     public void onCreate(Bundle arguments) {
+        //keepon
     }
 
     /**
