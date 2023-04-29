@@ -55,6 +55,7 @@ public class LinearGradient extends Shader {
      *                     the the colors are distributed evenly along the gradient line.
      * @param tile         The Shader tiling mode
     */
+    //创建一个沿直线绘制现行渐变的着色器
     public LinearGradient(float x0, float y0, float x1, float y1, @NonNull @ColorInt int colors[],
             @Nullable float positions[], @NonNull TileMode tile) {
         if (colors.length < 2) {

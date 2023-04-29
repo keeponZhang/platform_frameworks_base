@@ -22,6 +22,7 @@ import android.annotation.NonNull;
  * Shader used to draw a bitmap as a texture. The bitmap can be repeated or
  * mirrored by setting the tiling mode.
  */
+//Shader用于将图片绘制成纹理。通过设置平铺模式可以将位图平铺或者镜像
 public class BitmapShader extends Shader {
     /**
      * Prevent garbage collection.

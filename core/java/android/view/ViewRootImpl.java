@@ -2810,6 +2810,7 @@ public final class ViewRootImpl implements ViewParent,
         mIsDrawing = true;
         Trace.traceBegin(Trace.TRACE_TAG_VIEW, "draw");
         try {
+            //核心方法就是它
             draw(fullRedrawNeeded);
         } finally {
             mIsDrawing = false;
@@ -2858,7 +2859,8 @@ public final class ViewRootImpl implements ViewParent,
             }
         }
     }
-
+    // 其中参数fullRedrawNeeded是由mFullRedrawNeeded成员变量获取，它的作用是判断是否需要重新绘制全部视图，
+    // 如果是第一次绘制视图，那么显然应该绘制所以的视图，如果由于某些原因，导致了视图重绘，那么就没有必要绘制所有视图
     private void draw(boolean fullRedrawNeeded) {
         //最终绘制的画布则为它！！，至此整个绘制主流程就分析完了
         Surface surface = mSurface;
@@ -2906,7 +2908,7 @@ public final class ViewRootImpl implements ViewParent,
         final boolean scalingRequired = mAttachInfo.mScalingRequired;
 
         int resizeAlpha = 0;
-
+        //首先是先获取了mDirty值，这里保存了需要重绘的区域的信息，也就是最终要显示的区域
         final Rect dirty = mDirty;
         if (mSurfaceHolder != null) {
             // The app owns the surface, we won't draw.
@@ -3023,7 +3025,7 @@ public final class ViewRootImpl implements ViewParent,
                     scheduleTraversals();
                     return;
                 }
-
+                //走到这里
                 if (!drawSoftware(surface, mAttachInfo, xOffset, yOffset, scalingRequired, dirty)) {
                     return;
                 }
@@ -3039,6 +3041,8 @@ public final class ViewRootImpl implements ViewParent,
     /**
      * @return true if drawing was successful, false if an error occurred
      */
+    // 可以看出，首先是实例化了Canvas对象，然后锁定该canvas的区域，由dirty区域决定，接着对canvas进行一系列的属性赋值，
+    // 最后调用了mView.draw(canvas)方法，这里就可以清晰的看到，其实平常我们所说的画布并不是Canvas，而是Surface
     private boolean drawSoftware(Surface surface, AttachInfo attachInfo, int xoff, int yoff,
             boolean scalingRequired, Rect dirty) {
 
@@ -3088,6 +3092,9 @@ public final class ViewRootImpl implements ViewParent,
             // If we are applying an offset, we need to clear the area
             // where the offset doesn't appear to avoid having garbage
             // left in the blank areas.
+            //如果位图的格式包含alpha通道，我们需要在画之前清除它，以便子控件重新组合其图纸上的透明背景。这将自动地对剪辑区域进行关联或
+            //如果我们申请抵消，我们需要清理这个地区。在没有出现偏移的情况下避免垃圾留在空白区域
+            //（也就是我们正式绘制之前要把黑板擦干净）
             if (!canvas.isOpaque() || yoff != 0 || xoff != 0) {
                 canvas.drawColor(0, PorterDuff.Mode.CLEAR);
             }
@@ -3109,7 +3116,7 @@ public final class ViewRootImpl implements ViewParent,
                 }
                 canvas.setScreenDensity(scalingRequired ? mNoncompatDensity : 0);
                 attachInfo.mSetIgnoreDirtyState = false;
-
+                //看这里
                 mView.draw(canvas);
 
                 drawAccessibilityFocusedDrawableIfNeeded(canvas);

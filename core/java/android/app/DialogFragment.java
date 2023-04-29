@@ -201,6 +201,9 @@ public class DialogFragment extends Fragment
      * @param theme Optional custom theme.  If 0, an appropriate theme (based
      * on the style) will be selected for you.
      */
+    // 这个方法很重要呢，注意是设置对话框的基本外观和设置主题等等。通过手动设置Dialog和Window可以实现相同的效果，
+    // 如果是在对话框创建之后调用它将会失去作用……
+    // 通过这个方法，可以看到，在不设置theme，即为0的情况下，theme会被设置为android.R.style.Theme_Panel
     public void setStyle(int style, int theme) {
         mStyle = style;
         if (mStyle == STYLE_NO_FRAME || mStyle == STYLE_NO_INPUT) {
@@ -380,6 +383,10 @@ public class DialogFragment extends Fragment
             mDismissed = true;
         }
     }
+    onCreate这个方法主要是保存一些属性状态，比如style样式，theme注意，是否可以取消，后退栈的ID等等。
+    重点看一下mShowsDialog这个参数，这个参数是Boolean值，mShowsDialog = mContainerId == 0;所以，
+    默认情况下，mContainerId就是0，所以mShowsDialog就是true；而当你在把它当成Fragment使用时，会为其指定xml布局中位置，
+    那么mContainerId也会不为0，所以mShowsDialog就是false。
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

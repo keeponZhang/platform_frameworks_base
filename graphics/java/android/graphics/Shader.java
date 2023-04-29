@@ -27,6 +27,8 @@ import libcore.util.NativeAllocationRegistry;
  * paint.setShader(shader). After that any object (other than a bitmap) that is
  * drawn with that paint will get its color(s) from the shader.
  */
+//Shader对象的基类，该对象在绘制过程中会返回颜色的水平跨度。Shader的具体子类则会通过调用paint.setShader(shader)方法被安装到
+//Paint里面。之后，使用了改paint绘制的任何对象都会从整个着色器中获得其颜色
 public class Shader {
 
     private static class NoImagePreloadHolder {

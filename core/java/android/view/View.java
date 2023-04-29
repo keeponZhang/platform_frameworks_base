@@ -19165,15 +19165,16 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         mPrivateFlags = (privateFlags & ~PFLAG_DIRTY_MASK) | PFLAG_DRAWN;
 
         /*
+         *  整个绘制步骤
          * Draw traversal performs several drawing steps which must be executed
          * in the appropriate order:
          *
-         *      1. Draw the background
-         *      2. If necessary, save the canvas' layers to prepare for fading
-         *      3. Draw view's content
-         *      4. Draw children
-         *      5. If necessary, draw the fading edges and restore layers
-         *      6. Draw decorations (scrollbars for instance)
+         *      1. Draw the background 画背景
+         *      2. If necessary, save the canvas' layers to prepare for fading 必要时，保存画布的层以准备渐变。
+         *      3. Draw view's content  绘制视图内容
+         *      4. Draw children 画子view
+         *      5. If necessary, draw the fading edges and restore layers  如果需要，绘制渐变边缘并恢复图层
+         *      6. Draw decorations (scrollbars for instance) 绘制装饰(例如滚动条)
          */
 
         // Step 1, draw the background, if needed
